@@ -39,18 +39,27 @@ A mod builder for **Age of Conan** that creates and manages custom UI modules. C
 ## Requirements
 
 - **Age of Conan** (with mod support)
-- **Python 3.8+** (for running the builder)
-- MTASC compiler (included in `assets/compiler/`)
-- Flash CS6 for editing base.swf files (optional — only needed for advanced modifications)
+- **Windows 10/11**
 
 ## Installation
 
-1. Download or clone this repository
-2. Run `python kzbuilder.py`
-3. On first launch, set your Age of Conan installation path
-4. Configure modules in their respective tabs
-5. Click **Build & Install All** on the Welcome screen
-6. In-game: `/reloadui` then `/reloadgrids`
+1. Download the latest release `.zip` from [Releases](https://github.com/kazour/Kaz-Flash-Modz/releases)
+2. Extract the zip to any folder
+3. Run `Kaz Flash Modz.exe`
+4. On first launch, set your Age of Conan installation path
+5. Configure modules in their respective tabs
+6. Click **Build & Install All** on the Welcome screen
+7. In-game: `/reloadui` then `/reloadgrids`
+
+## Development
+
+To run from source instead of the bundled exe:
+
+- **Python 3.8+** required
+- `pip install -r requirements.txt`
+- `python kzbuilder.py`
+- MTASC compiler is included in `assets/compiler/`
+- Flash CS6 for editing base.swf files (optional — only needed for advanced modifications)
 
 ## In-Game Controls
 
