@@ -1,5 +1,5 @@
 """
-Timer Editor Dialog for KzBuilder 3.3.4
+Timer Editor Dialog for KzBuilder 3.3.5
 
 Modal dialog for adding/editing a single cooldown timer.
 Follows the AddGridWizard pattern: withdraw → build → restore position → deiconify.
@@ -10,14 +10,14 @@ from tkinter import ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from .ui_helpers import (
-    THEME_COLORS, TK_COLORS, FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
+    THEME_COLORS, FONT_SMALL,
     apply_dark_titlebar, restore_window_position, bind_window_position_save,
     add_tooltip, ColorSwatch,
 )
 from .timers_data import (
     CooldownTimer, TriggerType, BarDirection, CountDirection, RetriggerMode,
     COLOR_DEFAULT, COLOR_WARNING, COLOR_ALERT, COLOR_ACTIVE,
-    generate_timer_id, parse_duration_input, validate_color,
+    generate_timer_id, parse_duration_input,
 )
 
 # Trigger type display labels

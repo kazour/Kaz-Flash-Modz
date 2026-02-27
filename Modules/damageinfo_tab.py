@@ -1,5 +1,5 @@
 """
-DamageNumber Tab UI for KzBuilder 3.3.4
+DamageNumber Tab UI for KzBuilder 3.3.5
 Provides GUI for customizing DamageInfo.swf settings (global AS2 + per-type XML).
 """
 
@@ -10,13 +10,12 @@ import json
 from pathlib import Path
 
 from .ui_helpers import (
-    THEME_COLORS, TK_COLORS, FONT_SMALL_BOLD, FONT_SMALL,
-    style_tk_canvas, create_tip_bar, create_profile_info_bar, BTN_MEDIUM, add_tooltip,
+    THEME_COLORS, FONT_SMALL,
+    create_tip_bar, create_profile_info_bar, BTN_MEDIUM,
     ColorSwatch, create_scrollable_frame,
 )
 from .damageinfo_settings import (
     GLOBAL_SETTINGS,
-    GLOBAL_CATEGORIES,
     PRESETS,
     PRESET_NAMES,
     get_default_global_settings,
@@ -551,16 +550,12 @@ class DamageInfoTab(ttk.Frame):
         for type_name, values in self.RECOMMENDED_TYPES.items():
             vars_dict = self.type_vars.get(type_name, {})
             changed = False
-            i = 0
-            while i < len(fields):
-                key = fields[i]
+            for key, target in zip(fields, values):
                 if key in vars_dict:
                     current = vars_dict[key].get()
-                    target = values[i]
                     if current != target:
                         vars_dict[key].set(target)
                         changed = True
-                i += 1
             if changed:
                 types_changed += 1
         if types_changed > 0:

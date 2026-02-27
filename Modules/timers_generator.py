@@ -1,5 +1,5 @@
 """
-Cooldown Timer Generator for KzBuilder 3.3.4
+Cooldown Timer Generator for KzBuilder 3.3.5
 
 Generates KzTimers.as + TimerManager.as from CooldownSettings, compiles with MTASC.
 Two-class architecture: KzTimers (shell/UI/signals) + TimerManager (timer engine).
@@ -109,7 +109,6 @@ def generate_flash_timer_code(
 
     # Filter to active presets only
     active_presets = [p for p in settings.presets if p.timer_ids]
-    num_presets = len(active_presets)
 
     # Generate presets array
     presets_arr = []

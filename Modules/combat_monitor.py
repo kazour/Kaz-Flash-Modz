@@ -1,11 +1,11 @@
 """
-Combat Log Monitor Module for KzBuilder 3.3.4
+Combat Log Monitor Module for KzBuilder 3.3.5
 Daemon thread that monitors Age of Conan combat logs for boss mechanics.
 """
 
-import os
 import time
 import threading
+from pathlib import Path
 
 
 class CombatLogMonitor:
@@ -59,8 +59,9 @@ class CombatLogMonitor:
         latest = self.find_latest_log()
         if latest:
             self.log_path = latest
-            if os.path.exists(latest):
-                self.last_position = os.path.getsize(latest)
+            p = Path(latest)
+            if p.exists():
+                self.last_position = p.stat().st_size
             else:
                 self.last_position = 0
         return latest
@@ -73,9 +74,10 @@ class CombatLogMonitor:
             path: Full path to a CombatLog*.txt file
         """
         self.log_path = path
-        self.log_folder = os.path.dirname(path)
-        if os.path.exists(path):
-            self.last_position = os.path.getsize(path)
+        self.log_folder = str(Path(path).parent)
+        p = Path(path)
+        if p.exists():
+            self.last_position = p.stat().st_size
         else:
             self.last_position = 0
 
@@ -86,16 +88,16 @@ class CombatLogMonitor:
         Returns:
             str: Path to latest log, or None if not found
         """
-        if not self.log_folder or not os.path.exists(self.log_folder):
+        folder = Path(self.log_folder) if self.log_folder else None
+        if not folder or not folder.exists():
             return None
 
         try:
             combat_logs = []
-            for file in os.listdir(self.log_folder):
-                if file.startswith("CombatLog") and file.endswith(".txt"):
-                    full_path = os.path.join(self.log_folder, file)
-                    mtime = os.path.getmtime(full_path)
-                    combat_logs.append((full_path, mtime))
+            for entry in folder.iterdir():
+                if entry.name.startswith("CombatLog") and entry.name.endswith(".txt"):
+                    mtime = entry.stat().st_mtime
+                    combat_logs.append((str(entry), mtime))
 
             if combat_logs:
                 combat_logs.sort(key=lambda x: x[1], reverse=True)
@@ -112,7 +114,7 @@ class CombatLogMonitor:
         Returns:
             bool: True if started, False if no valid log path
         """
-        if not self.log_path or not os.path.exists(self.log_path):
+        if not self.log_path or not Path(self.log_path).exists():
             return False
 
         with self._lock:
@@ -162,10 +164,10 @@ class CombatLogMonitor:
             newest_log = None
             newest_mtime = 0
 
-            for file in os.listdir(self.log_folder):
-                if file.startswith("CombatLog") and file.endswith(".txt"):
-                    full_path = os.path.join(self.log_folder, file)
-                    mtime = os.path.getmtime(full_path)
+            for entry in Path(self.log_folder).iterdir():
+                if entry.name.startswith("CombatLog") and entry.name.endswith(".txt"):
+                    full_path = str(entry)
+                    mtime = entry.stat().st_mtime
                     if mtime > newest_mtime:
                         newest_mtime = mtime
                         newest_log = full_path
@@ -190,8 +192,9 @@ class CombatLogMonitor:
                 self._check_for_newer_log()
 
                 # Handle log file truncation/rotation
-                if os.path.exists(self.log_path):
-                    current_size = os.path.getsize(self.log_path)
+                log = Path(self.log_path)
+                if log.exists():
+                    current_size = log.stat().st_size
                     if current_size < self.last_position:
                         # Log was truncated/rotated
                         self.last_position = 0

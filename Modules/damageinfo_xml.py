@@ -1,12 +1,12 @@
 """
-DamageInfo XML Module for KzBuilder 3.3.4
+DamageInfo XML Module for KzBuilder 3.3.5
 Handles parsing and generation of TextColors.xml for per-type damage number customization.
 """
 
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict
 import copy
 import re
 

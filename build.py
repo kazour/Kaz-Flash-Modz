@@ -1,5 +1,5 @@
 """
-KzGrids Build Script
+Kaz Flash Modz Build Script
 Compiles the application to an executable and bundles it with assets into a zip file.
 
 Usage:
@@ -16,7 +16,7 @@ from datetime import datetime
 # Configuration
 APP_NAME = "Kaz Flash Modz"
 MAIN_SCRIPT = "kzbuilder.py"
-VERSION = "3.3.4"
+VERSION = "3.3.5"
 
 # Directories
 ROOT_DIR = Path(__file__).parent
@@ -42,7 +42,6 @@ DEFAULT_PROFILE = None
 # Folders to create (empty)
 FOLDERS_TO_CREATE = [
     "settings",
-    "temp",
 ]
 
 

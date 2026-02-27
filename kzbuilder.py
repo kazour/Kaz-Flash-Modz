@@ -1,5 +1,5 @@
 """
-Kaz Flash Modz v3.3.4
+Kaz Flash Modz v3.3.5
 Multi-module SWF mod builder for Age of Conan.
 Builds KzGrids, KzCastbars, KzTimers, KzStopwatch, and DamageInfo.
 """
@@ -41,12 +41,12 @@ from Modules.ui_helpers import (
     restore_window_position, bind_window_position_save,
     FONT_TITLE, FONT_SECTION, FONT_BODY, FONT_SMALL_BOLD, FONT_SMALL,
     THEME_COLORS, TK_COLORS, apply_dark_titlebar,
-    PAD_TAB, PAD_INNER, BTN_MEDIUM, BTN_LARGE,
+    PAD_INNER, BTN_MEDIUM, BTN_LARGE,
     MODULE_COLORS, add_tooltip, bind_card_events,
 )
 
 APP_NAME = "Kaz Flash Modz"
-APP_VERSION = "3.3.4"
+APP_VERSION = "3.3.5"
 SETTINGS_FILE = "kzbuilder_settings.json"
 PROFILES_DIR = "profiles"
 
@@ -620,7 +620,7 @@ class KzBuilder(ttb.Window):
                 errors.append(f"LiveTracker: {e}")
         if errors:
             Messagebox.show_error(
-                f"Some tabs failed to save:\n\n" + "\n".join(errors),
+                "Some tabs failed to save:\n\n" + "\n".join(errors),
                 title="Save Error"
             )
 
@@ -787,8 +787,8 @@ class KzBuilder(ttb.Window):
                 self._display_build_summary(game_path, config, results, cleaned)
         except Exception as e:
             Messagebox.show_error(
-                f"Something went wrong during the build.\n\n"
-                f"Your game files may not have been updated.\n\n"
+                "Something went wrong during the build.\n\n"
+                "Your game files may not have been updated.\n\n"
                 f"({type(e).__name__}: {e})",
                 title="Build Error")
             self.status_var.set("Build failed")

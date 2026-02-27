@@ -1,5 +1,5 @@
 """
-Castbar Tab UI for KzBuilder 3.3.4
+Castbar Tab UI for KzBuilder 3.3.5
 Provides GUI for configuring KzCastbars.swf settings with live preview.
 """
 
@@ -11,11 +11,10 @@ from pathlib import Path
 from ttkbootstrap.dialogs import Messagebox
 
 from .castbar_generator import build_castbars, write_hide_xml, remove_hide_xml
-from .build_utils import update_script_with_marker
+from .build_utils import update_script_with_marker, find_compiler
 from .castbar_settings import (
     CASTBAR_DEFAULTS,
     CASTBAR_FONTS,
-    CASTBAR_RANGES,
     STYLE_COLOR_MULT,
     STYLE_COLOR_OFFS,
     get_default_settings,
@@ -781,7 +780,7 @@ class CastbarTab(ttk.Frame):
             )
             return
 
-        compiler_path = self.assets_path.parent / "compiler" / "mtasc.exe"
+        compiler_path = find_compiler(self.assets_path.parent, Path(__file__).parent.parent)
         flash_path = Path(game_path) / "Data" / "Gui" / "Default" / "Flash"
         output_path = flash_path / "KzCastbars.swf"
 
@@ -791,9 +790,9 @@ class CastbarTab(ttk.Frame):
                 title="Missing base.swf"
             )
             return
-        if not compiler_path.exists():
+        if compiler_path is None:
             Messagebox.show_error(
-                f"MTASC compiler not found:\n{compiler_path}",
+                "MTASC compiler not found.\nCheck that 'compiler/mtasc.exe' exists.",
                 title="Compiler Not Found"
             )
             return

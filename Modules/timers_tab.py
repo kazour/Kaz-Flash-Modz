@@ -1,5 +1,5 @@
 """
-Timers Tab Module for KzBuilder 3.3.4
+Timers Tab Module for KzBuilder 3.3.5
 Cooldown Editor with integrated appearance settings.
 Stopwatch moved to StopwatchTab in v3.2.0.
 """

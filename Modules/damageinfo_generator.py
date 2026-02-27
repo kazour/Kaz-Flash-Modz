@@ -1,5 +1,5 @@
 """
-DamageInfo Generator for KzBuilder 3.3.4
+DamageInfo Generator for KzBuilder 3.3.5
 Handles AS2 code modification and MTASC compilation for DamageInfo.swf.
 """
 

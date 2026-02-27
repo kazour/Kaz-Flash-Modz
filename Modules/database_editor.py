@@ -16,10 +16,9 @@ v2 Format:
 import tkinter as tk
 from tkinter import ttk, filedialog
 from ttkbootstrap.dialogs import Messagebox
-from .ui_helpers import THEME_COLORS, TK_COLORS, style_tk_text, apply_dark_titlebar, BTN_SMALL, BTN_MEDIUM, add_tooltip
+from .ui_helpers import THEME_COLORS, style_tk_text, apply_dark_titlebar, BTN_SMALL, BTN_MEDIUM, add_tooltip
 import json
 import re
-from pathlib import Path
 
 
 # ============================================================================

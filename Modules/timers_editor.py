@@ -1,5 +1,5 @@
 """
-Cooldown Editor UI Module for KzBuilder 3.3.4
+Cooldown Editor UI Module for KzBuilder 3.3.5
 
 Visual editor for configuring cooldown tracking timers.
 Two-column layout: Preview + Appearance | Presets + Timer List.
@@ -20,7 +20,7 @@ from .ui_helpers import (
     ColorSwatch,
 )
 from .timers_appearance import (
-    TIMERS_APPEARANCE_RANGES, VALID_BUTTON_SHAPES,
+    VALID_BUTTON_SHAPES,
     validate_all_settings as validate_appearance,
 )
 
@@ -582,7 +582,6 @@ class TimersEditorPanel(ttk.Frame):
         timer_idx = self._preset_timer_indices[filtered_idx]
         self._select_timer(timer_idx)
         # Open edit dialog via parent tab
-        parent = self.winfo_toplevel()
         # Walk up to find TimersTab
         p = self.master
         while p is not None:

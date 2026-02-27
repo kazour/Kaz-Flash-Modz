@@ -1,5 +1,5 @@
 """
-Castbar Settings Module for KzBuilder 3.3.4
+Castbar Settings Module for KzBuilder 3.3.5
 Defines all castbar compile-time constants, defaults, and validation.
 """
 

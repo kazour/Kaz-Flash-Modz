@@ -6,8 +6,8 @@ Each timer represents one tracked ability cooldown:
 """
 
 import json
-import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
@@ -304,8 +304,8 @@ SETTINGS_FILENAME = "timers_data.json"
 
 def load_settings(settings_folder: str) -> CooldownSettings:
     """Load settings from JSON file, or return defaults."""
-    filepath = os.path.join(settings_folder, SETTINGS_FILENAME)
-    if os.path.exists(filepath):
+    filepath = Path(settings_folder) / SETTINGS_FILENAME
+    if filepath.exists():
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -313,9 +313,9 @@ def load_settings(settings_folder: str) -> CooldownSettings:
         except (json.JSONDecodeError, KeyError, TypeError):
             # Corrupted file — back up and fall through to defaults
             try:
-                backup = filepath + ".corrupt"
-                if not os.path.exists(backup):
-                    os.rename(filepath, backup)
+                backup = Path(str(filepath) + ".corrupt")
+                if not backup.exists():
+                    filepath.rename(backup)
             except OSError:
                 pass
     return create_default_settings()
@@ -323,9 +323,9 @@ def load_settings(settings_folder: str) -> CooldownSettings:
 
 def save_settings(settings_folder: str, settings: CooldownSettings) -> bool:
     """Save settings to JSON file."""
-    filepath = os.path.join(settings_folder, SETTINGS_FILENAME)
+    filepath = Path(settings_folder) / SETTINGS_FILENAME
     try:
-        os.makedirs(settings_folder, exist_ok=True)
+        Path(settings_folder).mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(settings.to_dict(), f, indent=2)
         return True

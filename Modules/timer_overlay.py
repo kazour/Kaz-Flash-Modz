@@ -1,5 +1,5 @@
 """
-Timer Overlay Module for KzBuilder 3.3.4
+Timer Overlay Module for KzBuilder 3.3.5
 Transparent, always-on-top overlay window for displaying boss timer information.
 """
 

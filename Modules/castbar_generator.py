@@ -1,5 +1,5 @@
 """
-Castbar Generator for KzBuilder 3.3.4
+Castbar Generator for KzBuilder 3.3.5
 Generates KzCastbars.as from user settings, compiles with MTASC,
 and handles CommandTimerBar.xml for hiding the default castbar.
 """

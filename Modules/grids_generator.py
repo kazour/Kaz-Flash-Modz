@@ -18,7 +18,7 @@ MAX_TOTAL_SLOTS = 64
 # CODE GENERATOR
 # ============================================================================
 class CodeGenerator:
-    def __init__(self, grids, database, app_version="3.3.4"):
+    def __init__(self, grids, database, app_version="3.3.5"):
         # Filter out disabled grids
         self.grids = [g for g in grids if g.get('enabled', True)]
         self.database = database
@@ -261,7 +261,7 @@ def build_grids(
     stubs_path: str,
     output_swf: str,
     compiler_path: str,
-    app_version: str = "3.3.4"
+    app_version: str = "3.3.5"
 ) -> Tuple[bool, str]:
     """
     Complete build process for KzGrids.swf.

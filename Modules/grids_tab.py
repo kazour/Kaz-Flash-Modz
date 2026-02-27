@@ -9,17 +9,17 @@ from tkinter import ttk, filedialog
 import json
 from pathlib import Path
 
-from Modules.database_editor import BuffDatabase, format_ids_display
+from Modules.database_editor import format_ids_display
 from Modules.grids_generator import build_grids
 from Modules.build_utils import update_script_with_marker
 from Modules.ui_helpers import (
     restore_window_position, bind_window_position_save,
     get_setting, set_setting,
-    FONT_SECTION, FONT_SMALL, FONT_SMALL_BOLD, FONT_BODY, FONT_FORM_LABEL,
-    THEME_COLORS, TK_COLORS, style_tk_listbox, style_tk_canvas, apply_dark_titlebar,
-    PAD_TAB, PAD_ROW, BTN_SMALL, BTN_MEDIUM, MODULE_COLORS, GRID_TYPE_COLORS,
+    FONT_SECTION, FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
+    THEME_COLORS, style_tk_listbox, apply_dark_titlebar,
+    PAD_ROW, BTN_SMALL, BTN_MEDIUM, GRID_TYPE_COLORS,
     create_tip_bar, create_profile_info_bar,
-    CollapsibleSection, add_tooltip, create_section_header, fill_canvas_solid, bind_card_events,
+    CollapsibleSection, add_tooltip, create_section_header, bind_card_events,
     create_scrollable_frame,
 )
 from ttkbootstrap.dialogs import Messagebox
@@ -909,7 +909,6 @@ class GridEditorPanel(ttk.Frame):
         self.section.set_title(cfg.get('id', 'Grid'))
 
         # Build summary for collapsed state
-        source = cfg.get('type', 'player')
         size = f"{rows}x{cols}"
         mode = cfg.get('slotMode', 'dynamic')
         self.section.set_summary(f"  {size} \u00B7 {mode}")

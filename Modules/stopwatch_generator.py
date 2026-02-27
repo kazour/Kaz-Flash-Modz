@@ -1,5 +1,5 @@
 """
-Stopwatch Generator for KzBuilder 3.3.4
+Stopwatch Generator for KzBuilder 3.3.5
 
 Generates KzStopwatch.as from stopwatch settings + preset data, compiles with MTASC.
 """

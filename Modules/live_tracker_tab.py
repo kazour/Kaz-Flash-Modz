@@ -1,5 +1,5 @@
 """
-Live Tracker Tab Module for KzBuilder 3.3.4
+Live Tracker Tab Module for KzBuilder 3.3.5
 Ethram-Fal seed timer overlay, combat log monitoring, and overlay controls.
 Extracted from timers_tab.py in v3.1.0.
 """

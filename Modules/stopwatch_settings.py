@@ -1,10 +1,10 @@
 """
-Stopwatch Settings Module for KzBuilder 3.3.4
+Stopwatch Settings Module for KzBuilder 3.3.5
 Defines defaults, validation, and I/O for the standalone stopwatch SWF.
 """
 
-import os
 import json
+from pathlib import Path
 
 
 # =============================================================================
@@ -162,7 +162,7 @@ SETTINGS_FILENAME = "stopwatch_settings.json"
 
 def get_settings_path(settings_folder):
     """Get the full path to stopwatch_settings.json."""
-    return os.path.join(settings_folder, SETTINGS_FILENAME)
+    return str(Path(settings_folder) / SETTINGS_FILENAME)
 
 
 def load_settings(settings_folder):
@@ -170,7 +170,7 @@ def load_settings(settings_folder):
     settings_path = get_settings_path(settings_folder)
 
     try:
-        if os.path.exists(settings_path):
+        if Path(settings_path).exists():
             with open(settings_path, 'r', encoding='utf-8') as f:
                 loaded = json.load(f)
             return validate_all_settings(loaded)
@@ -183,7 +183,7 @@ def load_settings(settings_folder):
 def save_settings(settings_folder, settings):
     """Save stopwatch settings to JSON file."""
     try:
-        os.makedirs(settings_folder, exist_ok=True)
+        Path(settings_folder).mkdir(parents=True, exist_ok=True)
         settings_path = get_settings_path(settings_folder)
         validated = validate_all_settings(settings)
 

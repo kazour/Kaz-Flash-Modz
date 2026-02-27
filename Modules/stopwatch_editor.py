@@ -1,5 +1,5 @@
 """
-Stopwatch Editor UI Module for KzBuilder 3.3.4
+Stopwatch Editor UI Module for KzBuilder 3.3.5
 
 Two-column editor for stopwatch presets and appearance.
 Column 0: Preview canvas + appearance settings (scrollable).
@@ -16,15 +16,15 @@ from typing import Callable, Optional
 from .ui_helpers import (
     TK_COLORS, style_tk_listbox, style_tk_canvas,
     blend_alpha, create_rounded_rect,
-    FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
+    FONT_SMALL, FONT_SMALL_BOLD,
     ColorSwatch,
 )
 from .stopwatch_settings import (
-    STOPWATCH_RANGES, VALID_LAYOUTS, VALID_BUTTON_SHAPES,
+    VALID_BUTTON_SHAPES,
     validate_all_settings as validate_appearance,
 )
 from .stopwatch_data import (
-    StopwatchPresetSettings, StopwatchPreset, StopwatchPhase,
+    StopwatchPresetSettings, StopwatchPreset,
     MAX_PRESETS, MAX_PHASES_PER_PRESET,
     load_settings as load_preset_settings,
     save_settings as save_preset_settings,
@@ -593,12 +593,9 @@ class StopwatchEditorPanel(ttk.Frame):
             return
 
         preset = self.preset_settings.presets[self.selected_preset_index]
-        i = 0
-        while i < len(preset.phases):
-            phase = preset.phases[i]
+        for phase in preset.phases:
             dur = format_duration_display(phase.duration)
             self._phase_listbox.insert('end', f"{phase.name} ({dur})")
-            i += 1
 
         count = len(preset.phases)
         self._phase_list_frame.configure(text=f"Phases ({count}/{MAX_PHASES_PER_PRESET})")

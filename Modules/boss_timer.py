@@ -1,5 +1,5 @@
 """
-Boss Timer Module for KzBuilder 3.3.4
+Boss Timer Module for KzBuilder 3.3.5
 Core timing logic for Ethram-Fal seed cycle phases.
 
 Decoupled from UI - receives update_callback to push display data.

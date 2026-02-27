@@ -1,5 +1,5 @@
 """
-Stopwatch Preset Data Models — KzBuilder 3.3.4
+Stopwatch Preset Data Models — KzBuilder 3.3.5
 
 Dataclasses for stopwatch presets: phase-based sequences with configurable
 end behavior and count direction. Each preset defines a multi-phase timer
@@ -7,8 +7,8 @@ end behavior and count direction. Each preset defines a multi-phase timer
 """
 
 import json
-import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Dict, Any
 
 
@@ -238,8 +238,8 @@ def create_default_settings() -> StopwatchPresetSettings:
 
 def load_settings(settings_folder: str) -> StopwatchPresetSettings:
     """Load preset settings from JSON file, or return defaults."""
-    filepath = os.path.join(settings_folder, SETTINGS_FILENAME)
-    if os.path.exists(filepath):
+    filepath = Path(settings_folder) / SETTINGS_FILENAME
+    if filepath.exists():
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -247,9 +247,9 @@ def load_settings(settings_folder: str) -> StopwatchPresetSettings:
         except (json.JSONDecodeError, KeyError, TypeError):
             # Corrupted file — back up and fall through to defaults
             try:
-                backup = filepath + ".corrupt"
-                if not os.path.exists(backup):
-                    os.rename(filepath, backup)
+                backup = Path(str(filepath) + ".corrupt")
+                if not backup.exists():
+                    filepath.rename(backup)
             except OSError:
                 pass
     return create_default_settings()
@@ -257,9 +257,9 @@ def load_settings(settings_folder: str) -> StopwatchPresetSettings:
 
 def save_settings(settings_folder: str, settings: StopwatchPresetSettings) -> bool:
     """Save preset settings to JSON file."""
-    filepath = os.path.join(settings_folder, SETTINGS_FILENAME)
+    filepath = Path(settings_folder) / SETTINGS_FILENAME
     try:
-        os.makedirs(settings_folder, exist_ok=True)
+        Path(settings_folder).mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(settings.to_dict(), f, indent=2)
         return True
