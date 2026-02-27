@@ -18,9 +18,8 @@ from .stopwatch_settings import (
     save_settings as save_stopwatch,
 )
 from .stopwatch_data import (
-    StopwatchPresetSettings, StopwatchPreset,
+    StopwatchPresetSettings,
     MAX_PHASES_PER_PRESET,
-    save_settings as save_preset_settings,
     create_default_settings as create_default_presets,
 )
 from .stopwatch_editor import StopwatchEditorPanel
