@@ -6,7 +6,7 @@ and handles CommandTimerBar.xml for hiding the default castbar.
 
 import re
 import shutil
-import subprocess
+import tempfile
 from pathlib import Path
 from typing import Tuple
 
@@ -128,20 +128,20 @@ def build_castbars(
     if not compiler_path.exists():
         return False, f"MTASC compiler not found:\n{compiler_path}"
 
+    temp_dir = None
     try:
         # Step 1: Generate AS2 code
         code = generate_castbar_code(settings, assets_path=str(castbars_path.parent))
 
         # Step 2: Write to temp .as file
-        temp_dir = castbars_path.parent.parent / "temp" / "castbars"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_as = temp_dir / "KzCastbars.as"
+        temp_dir = tempfile.mkdtemp(prefix="castbars_")
+        temp_as = Path(temp_dir) / "KzCastbars.as"
         with open(temp_as, 'w', encoding='utf-8') as f:
             f.write(code)
 
         # Step 3: Copy base.swf to output location
         output_swf.parent.mkdir(parents=True, exist_ok=True)
-        temp_swf = temp_dir / "KzCastbars_temp.swf"
+        temp_swf = Path(temp_dir) / "KzCastbars_temp.swf"
         shutil.copy2(base_swf, temp_swf)
 
         # Step 4: Compile
@@ -152,19 +152,17 @@ def build_castbars(
         # Step 5: Move to final location
         shutil.copy2(temp_swf, output_swf)
 
-        # Cleanup temp
-        try:
-            temp_swf.unlink()
-        except Exception:
-            pass
-
         output_size = output_swf.stat().st_size
         return True, f"KzCastbars.swf built successfully ({output_size:,} bytes)"
 
-    except subprocess.TimeoutExpired:
-        return False, "MTASC compilation timed out"
     except Exception as e:
         return False, f"Build error: {str(e)}"
+    finally:
+        if temp_dir:
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
 
 
 # =============================================================================
@@ -243,7 +241,7 @@ def _modify_commandtimerbar_to_hide(content: str) -> str:
     """
     # Add max_size_limit to ProgressBar (insert before bg_gfx or fg_gfx)
     # Pattern: find ProgressBar element, insert max_size_limit if not present
-    if 'name="TimerBar"' in content and 'max_size_limit' not in content.split('ProgressBar')[1].split('/>')[0]:
+    if 'ProgressBar' in content and 'name="TimerBar"' in content and 'max_size_limit' not in content.split('ProgressBar')[1].split('/>')[0]:
         # Insert max_size_limit before bg_gfx
         content = re.sub(
             r'(name="TimerBar"[^>]*?)(bg_gfx=)',

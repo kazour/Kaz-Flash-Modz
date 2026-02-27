@@ -4,6 +4,7 @@ Generates KzGrids.as ActionScript 2.0 source code from grid configurations.
 """
 
 import shutil
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from typing import Tuple
@@ -287,21 +288,21 @@ def build_grids(
     if not compiler_path.exists():
         return False, f"MTASC compiler not found:\n{compiler_path}"
 
+    temp_dir = None
     try:
         # Step 1: Generate AS2 code
         generator = CodeGenerator(grids, database, app_version)
         code = generator.generate()
 
         # Step 2: Write to temp .as file
-        temp_dir = base_swf.parent.parent.parent / "temp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_as = temp_dir / "KzGrids.as"
+        temp_dir = tempfile.mkdtemp(prefix="kzgrids_")
+        temp_as = Path(temp_dir) / "KzGrids.as"
         with open(temp_as, 'w', encoding='utf-8') as f:
             f.write(code)
 
         # Step 3: Copy base.swf to temp
         output_swf.parent.mkdir(parents=True, exist_ok=True)
-        temp_swf = temp_dir / "KzGrids.swf"
+        temp_swf = Path(temp_dir) / "KzGrids.swf"
         shutil.copy2(base_swf, temp_swf)
 
         # Step 4: Compile
@@ -318,3 +319,9 @@ def build_grids(
 
     except Exception as e:
         return False, f"Build error: {str(e)}"
+    finally:
+        if temp_dir:
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass

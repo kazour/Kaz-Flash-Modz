@@ -5,7 +5,6 @@ Handles AS2 code modification and MTASC compilation for DamageInfo.swf.
 
 import re
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Tuple, Optional
@@ -214,7 +213,5 @@ def build_damageinfo(
             except Exception:
                 pass
 
-    except subprocess.TimeoutExpired:
-        return False, "MTASC compilation timed out"
     except Exception as e:
         return False, f"Build error: {str(e)}"

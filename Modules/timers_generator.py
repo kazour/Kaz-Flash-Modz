@@ -5,9 +5,8 @@ Generates KzTimers.as + TimerManager.as from CooldownSettings, compiles with MTA
 Two-class architecture: KzTimers (shell/UI/signals) + TimerManager (timer engine).
 """
 
-import os
 import shutil
-import subprocess
+import tempfile
 from pathlib import Path
 from typing import Tuple
 
@@ -241,26 +240,26 @@ def build_flash_timer(
     if errors:
         return False, "Settings validation failed:\n" + "\n".join(errors)
 
+    temp_dir = None
     try:
         # Step 1: Generate AS2 code (two files)
         timer_code, engine_code = generate_flash_timer_code(
             settings, appearance=appearance, assets_path=str(flash_timer_path.parent))
 
         # Step 2: Write both .as files to temp directory
-        temp_dir = flash_timer_path.parent.parent / "temp" / "flash_timer"
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(prefix="flash_timer_")
 
-        temp_timer_as = temp_dir / "KzTimers.as"
+        temp_timer_as = Path(temp_dir) / "KzTimers.as"
         with open(temp_timer_as, 'w', encoding='utf-8') as f:
             f.write(timer_code)
 
-        temp_engine_as = temp_dir / "TimerManager.as"
+        temp_engine_as = Path(temp_dir) / "TimerManager.as"
         with open(temp_engine_as, 'w', encoding='utf-8') as f:
             f.write(engine_code)
 
         # Step 3: Copy base.swf to temp location
         output_swf.parent.mkdir(parents=True, exist_ok=True)
-        temp_swf = temp_dir / "KzTimers_temp.swf"
+        temp_swf = Path(temp_dir) / "KzTimers_temp.swf"
         shutil.copy2(base_swf, temp_swf)
 
         # Step 4: Compile both AS2 files into one SWF
@@ -273,16 +272,14 @@ def build_flash_timer(
         # Step 5: Move to final location
         shutil.copy2(temp_swf, output_swf)
 
-        # Cleanup temp
-        try:
-            temp_swf.unlink()
-        except Exception:
-            pass
-
         output_size = output_swf.stat().st_size
         return True, f"KzTimers.swf built successfully ({output_size:,} bytes)"
 
-    except subprocess.TimeoutExpired:
-        return False, "MTASC compilation timed out"
     except Exception as e:
         return False, f"Build error: {str(e)}"
+    finally:
+        if temp_dir:
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass

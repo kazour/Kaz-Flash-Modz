@@ -106,6 +106,7 @@ class KzBuilder(ttb.Window):
         self.settings_path.mkdir(exist_ok=True)
         self.assets_path = self.app_path / "assets"
         self.assets_path.mkdir(exist_ok=True)
+        self._compiler_path = None
 
         self.settings = SettingsManager(self.settings_path / SETTINGS_FILE)
         init_settings(self.settings)
@@ -204,16 +205,16 @@ class KzBuilder(ttb.Window):
             on_open_database=self._open_database_window,
             status_var=self.status_var,
             game_path_var=self.game_path,
-            assets_path=str(self.assets_path)
+            assets_path=self.assets_path
         )
         self.notebook.add(self.grids_tab, text="  Grids  ")
 
         # === TAB: Castbars ===
-        self.castbar_tab = CastbarTab(self.notebook, str(self.settings_path), self.game_path, assets_path=str(self.assets_path))
+        self.castbar_tab = CastbarTab(self.notebook, str(self.settings_path), self.game_path, assets_path=self.assets_path)
         self.notebook.add(self.castbar_tab, text="  Castbars  ")
 
         # === TAB: Timers ===
-        self.timers_tab = TimersTab(self.notebook, self.settings, assets_path=str(self.assets_path), database=self.database, on_open_database=self._open_database_window)
+        self.timers_tab = TimersTab(self.notebook, self.settings, assets_path=self.assets_path, database=self.database, on_open_database=self._open_database_window)
         self.notebook.add(self.timers_tab, text="  Timers  ")
 
         # === TAB: Stopwatch === (NEW in v3.2.0)
@@ -221,12 +222,12 @@ class KzBuilder(ttb.Window):
             self.notebook,
             settings_folder=str(self.settings_path),
             game_path_var=self.game_path,
-            assets_path=str(self.assets_path)
+            assets_path=self.assets_path
         )
         self.notebook.add(self.stopwatch_tab, text="  Stopwatch  ")
 
         # === TAB: DamageNumbers ===
-        self.damageinfo_tab = DamageInfoTab(self.notebook, str(self.settings_path), self.game_path, assets_path=str(self.assets_path))
+        self.damageinfo_tab = DamageInfoTab(self.notebook, str(self.settings_path), self.game_path, assets_path=self.assets_path)
         self.notebook.add(self.damageinfo_tab, text="  DamageNumbers  ")
 
         # Live Tracker — independent window, launched from Welcome tab
@@ -818,6 +819,7 @@ class KzBuilder(ttb.Window):
                 title="Compiler Not Found")
             return None
 
+        self._compiler_path = compiler
         return game_path
 
     def _get_build_configuration(self, game_path):
@@ -872,7 +874,7 @@ class KzBuilder(ttb.Window):
                 self.status_var.set(f"Step {current_step}/{total_steps}: Building KzGrids...")
                 self.update()
 
-                compiler = find_compiler(self.assets_path, self.app_path)
+                compiler = self._compiler_path
                 base_swf = self.assets_path / "kzgrids" / "base.swf"
                 if not base_swf.exists():
                     base_swf = self.assets_path / "base.swf"
@@ -1133,7 +1135,7 @@ class KzBuilder(ttb.Window):
             source_path = damageinfo_path / "scripts phase 5" / "__Packages"
         backup_swf = damageinfo_path / "DamageInfo_backup.swf"
 
-        compiler = find_compiler(self.assets_path, self.app_path)
+        compiler = self._compiler_path
 
         if not source_path.exists():
             return False, f"DamageInfo sources not found:\n{source_path}"
@@ -1172,7 +1174,7 @@ class KzBuilder(ttb.Window):
         settings = self.castbar_tab.get_profile_data()
 
         castbars_path = self.assets_path / "castbars"
-        compiler = find_compiler(self.assets_path, self.app_path)
+        compiler = self._compiler_path
 
         if not castbars_path.exists():
             return False, f"Castbars assets not found:\n{castbars_path}"
@@ -1210,7 +1212,7 @@ class KzBuilder(ttb.Window):
         appearance = self.timers_tab.appearance_settings
 
         flash_timer_path = self.assets_path / "flash_timer"
-        compiler = find_compiler(self.assets_path, self.app_path)
+        compiler = self._compiler_path
 
         base_swf = flash_timer_path / "base.swf"
         if not base_swf.exists():
@@ -1230,7 +1232,7 @@ class KzBuilder(ttb.Window):
         preset_settings = self.stopwatch_tab.get_preset_settings()
 
         flash_stopwatch_path = self.assets_path / "flash_stopwatch"
-        compiler = find_compiler(self.assets_path, self.app_path)
+        compiler = self._compiler_path
 
         if not compiler or not compiler.exists():
             return False, "MTASC compiler not found"

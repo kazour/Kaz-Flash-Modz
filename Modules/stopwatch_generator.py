@@ -5,6 +5,7 @@ Generates KzStopwatch.as from stopwatch settings + preset data, compiles with MT
 """
 
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Tuple
 
@@ -180,6 +181,7 @@ def build_stopwatch(
     if not compiler_path.exists():
         return False, f"MTASC compiler not found:\n{compiler_path}"
 
+    temp_dir = None
     try:
         # Step 1: Generate AS2 code
         code = generate_stopwatch_code(
@@ -187,16 +189,15 @@ def build_stopwatch(
             preset_settings=preset_settings)
 
         # Step 2: Write .as file to temp directory
-        temp_dir = flash_stopwatch_path.parent.parent / "temp" / "flash_stopwatch"
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(prefix="flash_stopwatch_")
 
-        temp_as = temp_dir / "KzStopwatch.as"
+        temp_as = Path(temp_dir) / "KzStopwatch.as"
         with open(temp_as, 'w', encoding='utf-8') as f:
             f.write(code)
 
         # Step 3: Copy base.swf to temp, compile AS2 into it with -main
         output_swf.parent.mkdir(parents=True, exist_ok=True)
-        temp_swf = temp_dir / "KzStopwatch_temp.swf"
+        temp_swf = Path(temp_dir) / "KzStopwatch_temp.swf"
         shutil.copy2(base_swf, temp_swf)
 
         ok, err = compile_as2(
@@ -208,14 +209,14 @@ def build_stopwatch(
         # Step 4: Copy to final location
         shutil.copy2(temp_swf, output_swf)
 
-        # Cleanup temp SWF
-        try:
-            temp_swf.unlink()
-        except Exception:
-            pass
-
         output_size = output_swf.stat().st_size
         return True, f"KzStopwatch.swf built successfully ({output_size:,} bytes)"
 
     except Exception as e:
         return False, f"Build error: {str(e)}"
+    finally:
+        if temp_dir:
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
