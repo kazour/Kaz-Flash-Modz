@@ -165,11 +165,11 @@ assets/damageinfo/                      ← DamageInfo
 | Context | Location | Cleanup |
 |---------|----------|---------|
 | Build All staging | `tempfile.mkdtemp(prefix="kzbuilder_")` | Always cleaned in `finally` block |
-| KzGrids | `temp/` (project root) | Persists for inspection |
-| KzCastbars | `temp/castbars/` | Persists for inspection |
-| KzTimers | `temp/flash_timer/` | Persists for inspection |
-| KzStopwatch | `temp/flash_stopwatch/` | Persists for inspection |
-| DamageInfo | `tempfile.mkdtemp(prefix="damageinfo_")` | Cleaned after compile |
+| KzGrids | `tempfile.mkdtemp(prefix="kzgrids_")` | Always cleaned in `finally` block |
+| KzCastbars | `tempfile.mkdtemp(prefix="kzcastbars_")` | Always cleaned in `finally` block |
+| KzTimers | `tempfile.mkdtemp(prefix="kztimers_")` | Always cleaned in `finally` block |
+| KzStopwatch | `tempfile.mkdtemp(prefix="kzstopwatch_")` | Always cleaned in `finally` block |
+| DamageInfo | `tempfile.mkdtemp(prefix="damageinfo_")` | Always cleaned in `finally` block |
 
 ---
 
