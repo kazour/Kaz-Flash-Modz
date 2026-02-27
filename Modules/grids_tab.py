@@ -43,6 +43,7 @@ SLOT_ASSIGNMENT_SIZE = (850, 600)
 # DEFAULT GRID CONFIGURATION
 # ============================================================================
 def create_default_grid(grid_type="player", rows=1, cols=10, mode="dynamic", grid_id=None):
+    """Return a grid configuration dictionary with sensible defaults."""
     if rows == 1 and cols == 1:
         mode = "static"
 
@@ -80,7 +81,10 @@ def create_default_grid(grid_type="player", rows=1, cols=10, mode="dynamic", gri
 # ADD GRID WIZARD
 # ============================================================================
 class AddGridWizard(tk.Toplevel):
+    """Dialog wizard for creating a new grid with type, size, and mode options."""
+
     def __init__(self, parent, existing_ids, current_total_slots):
+        """Initialize the add-grid wizard with slot availability constraints."""
         super().__init__(parent)
         self.withdraw()
         apply_dark_titlebar(self)
@@ -101,6 +105,7 @@ class AddGridWizard(tk.Toplevel):
         self.deiconify()
 
     def generate_unique_name(self, base="Grid"):
+        """Generate a grid name that does not collide with existing IDs."""
         counter = 1
         while True:
             name = f"{base}{counter}"
@@ -109,6 +114,7 @@ class AddGridWizard(tk.Toplevel):
             counter += 1
 
     def create_widgets(self):
+        """Build the wizard form with grid type, dimensions, and template controls."""
         frame = ttk.Frame(self, padding=12)
         frame.pack(fill='both', expand=True)
 
@@ -213,6 +219,7 @@ class AddGridWizard(tk.Toplevel):
         self.update_display()
 
     def apply_template(self, rows, cols):
+        """Apply a predefined row/col template, clamping to available slots."""
         total = rows * cols
         if total > self.available_slots:
             if rows == 1:
@@ -231,6 +238,7 @@ class AddGridWizard(tk.Toplevel):
         self.update_display()
 
     def safe_get_int(self, var, default=1):
+        """Parse an integer from a tkinter variable, returning a default on failure."""
         try:
             val = var.get().strip()
             if not val:
@@ -258,12 +266,15 @@ class AddGridWizard(tk.Toplevel):
         self.update_display()
 
     def on_rows_changed(self):
+        """Handle a change in the rows spinbox value."""
         self._on_dimension_changed('rows')
 
     def on_cols_changed(self):
+        """Handle a change in the columns spinbox value."""
         self._on_dimension_changed('cols')
 
     def update_display(self):
+        """Refresh the shape description, slot preview, and mode availability."""
         rows = self.safe_get_int(self.rows_var, 1)
         cols = self.safe_get_int(self.cols_var, 1)
         total = rows * cols
@@ -292,6 +303,7 @@ class AddGridWizard(tk.Toplevel):
             self.warning_var.set(f"Exceeds available slots by {-remaining}!")
 
     def on_create(self):
+        """Validate inputs and store the new grid configuration as the result."""
         grid_id = self.id_var.get().strip()
         if not grid_id:
             Messagebox.show_error("Grid name is required", title="Error")
@@ -327,6 +339,7 @@ class AddGridWizard(tk.Toplevel):
         self.destroy()
 
     def on_cancel(self):
+        """Discard the wizard and close the dialog."""
         self.result = None
         self.destroy()
 
@@ -334,7 +347,10 @@ class AddGridWizard(tk.Toplevel):
 # BUFF SELECTOR DIALOG
 # ============================================================================
 class BuffSelectorDialog(tk.Toplevel):
+    """Dual-list dialog for selecting buff IDs from the database."""
+
     def __init__(self, parent, database, title="Select Buffs", initial_ids=None):
+        """Initialize the buff selector with search filters and pre-selected IDs."""
         super().__init__(parent)
         self.withdraw()
         apply_dark_titlebar(self)
@@ -361,10 +377,12 @@ class BuffSelectorDialog(tk.Toplevel):
         self.deiconify()
 
     def save_filter_state(self):
+        """Persist the current category and type filter selections to settings."""
         set_setting('buff_selector_category', self.category_var.get())
         set_setting('buff_selector_type', self.type_var.get())
 
     def create_widgets(self):
+        """Build the search bar, available/selected listboxes, and action buttons."""
         search_frame = ttk.Frame(self, padding=5)
         search_frame.pack(fill='x')
 
@@ -432,6 +450,7 @@ class BuffSelectorDialog(tk.Toplevel):
         ttk.Button(bottom_frame, text="Cancel", command=self.on_cancel, width=10).pack(side='right')
 
     def refresh_lists(self):
+        """Repopulate the available and selected listboxes from current filters."""
         query = self.search_var.get()
         category = self.category_var.get()
         if category == "All":
@@ -471,33 +490,39 @@ class BuffSelectorDialog(tk.Toplevel):
         self.status_var.set(f"{len(self.selected_ids)} IDs selected")
 
     def add_selected(self):
+        """Move highlighted buffs from the available list to the selected list."""
         for i in self.avail_list.curselection():
             for bid in self.avail_data[i].get('ids', []):
                 self.selected_ids.add(bid)
         self.refresh_lists()
 
     def remove_selected(self):
+        """Remove highlighted buffs from the selected list."""
         for i in self.sel_list.curselection():
             for bid in self.sel_data[i]['ids']:
                 self.selected_ids.discard(bid)
         self.refresh_lists()
 
     def add_all(self):
+        """Move all currently visible available buffs to the selected list."""
         for buff in self.avail_data:
             for bid in buff.get('ids', []):
                 self.selected_ids.add(bid)
         self.refresh_lists()
 
     def clear_all(self):
+        """Remove all buffs from the selected list."""
         self.selected_ids.clear()
         self.refresh_lists()
 
     def on_ok(self):
+        """Confirm the selection and close the dialog."""
         self.save_filter_state()
         self.result = list(self.selected_ids)
         self.destroy()
 
     def on_cancel(self):
+        """Discard the selection and close the dialog."""
         self.save_filter_state()
         self.result = None
         self.destroy()
@@ -506,7 +531,10 @@ class BuffSelectorDialog(tk.Toplevel):
 # SLOT ASSIGNMENT DIALOG
 # ============================================================================
 class SlotAssignmentDialog(tk.Toplevel):
+    """Dialog for assigning specific buffs to individual grid slots."""
+
     def __init__(self, parent, database, grid_config):
+        """Initialize the slot assignment editor from an existing grid configuration."""
         super().__init__(parent)
         self.withdraw()
         apply_dark_titlebar(self)
@@ -535,6 +563,7 @@ class SlotAssignmentDialog(tk.Toplevel):
         self.deiconify()
 
     def create_widgets(self):
+        """Build the scrollable list of slot frames with edit and clear buttons."""
         info = f"Grid: {self.grid_config['rows']}x{self.grid_config['cols']} = {self.total_slots} slots"
         ttk.Label(self, text=info, padding=5, font=FONT_BODY).pack(fill='x')
 
@@ -576,6 +605,7 @@ class SlotAssignmentDialog(tk.Toplevel):
         ttk.Button(bottom, text="Cancel", command=self.on_cancel, width=10).pack(side='right')
 
     def refresh_slot_displays(self):
+        """Update each slot listbox to show its currently assigned buffs."""
         for i, listbox in enumerate(self.slot_lists):
             listbox.delete(0, tk.END)
             for buff_id in self.assignments.get(i, []):
@@ -585,6 +615,7 @@ class SlotAssignmentDialog(tk.Toplevel):
                 listbox.insert(tk.END, f"{name} {tag} ({buff_id})")
 
     def edit_slot(self, slot_index):
+        """Open the buff selector to edit assignments for a single slot."""
         dialog = BuffSelectorDialog(
             self, self.database, f"Slot {slot_index} Buffs",
             initial_ids=self.assignments.get(slot_index, [])
@@ -595,14 +626,17 @@ class SlotAssignmentDialog(tk.Toplevel):
             self.refresh_slot_displays()
 
     def clear_slot(self, slot_index):
+        """Remove all buff assignments from the given slot."""
         self.assignments[slot_index] = []
         self.refresh_slot_displays()
 
     def on_ok(self):
+        """Confirm slot assignments and close the dialog."""
         self.result = {str(k): v for k, v in self.assignments.items() if v}
         self.destroy()
 
     def on_cancel(self):
+        """Discard slot assignment changes and close the dialog."""
         self.result = None
         self.destroy()
 
@@ -617,6 +651,7 @@ class GridEditorPanel(ttk.Frame):
     """
 
     def __init__(self, parent, database, grid_config, on_delete=None, initially_open=False):
+        """Initialize a collapsible grid editor panel from the given grid config."""
         super().__init__(parent)
         self.database = database
         self.grid_config = grid_config
@@ -807,6 +842,7 @@ class GridEditorPanel(ttk.Frame):
         bind_card_events(card, self._accent_color)
 
     def load_from_config(self):
+        """Populate all editor widgets from the current grid configuration dict."""
         cfg = self.grid_config
         self.id_var.set(cfg.get('id', 'Grid'))
         self.enabled_var.set(cfg.get('enabled', True))
@@ -851,6 +887,7 @@ class GridEditorPanel(ttk.Frame):
         self.update_labels()
 
     def save_to_config(self):
+        """Write current widget values back into the grid configuration dict."""
         self.grid_config['id'] = self.id_var.get()
         self.grid_config['enabled'] = self.enabled_var.get()
         self.grid_config['x'] = max(0, min(self.x_var.get(), SCREEN_MAX_X))
@@ -867,6 +904,7 @@ class GridEditorPanel(ttk.Frame):
         self.grid_config['layout'] = self.layout_var.get()
 
     def update_labels(self):
+        """Refresh whitelist, slot assignment, and header summary labels."""
         cfg = self.grid_config
         wl = cfg.get('whitelist', [])
         rows = cfg.get('rows', 1)
@@ -914,6 +952,7 @@ class GridEditorPanel(ttk.Frame):
         self.section.set_summary(f"  {size} \u00B7 {mode}")
 
     def edit_whitelist(self):
+        """Open the buff selector to edit this grid's whitelist."""
         self.save_to_config()
         dialog = BuffSelectorDialog(
             self.winfo_toplevel(), self.database, "Edit Whitelist",
@@ -925,6 +964,7 @@ class GridEditorPanel(ttk.Frame):
             self.update_labels()
 
     def edit_slots(self):
+        """Open the slot assignment dialog for this grid's static slots."""
         self.save_to_config()
         dialog = SlotAssignmentDialog(self.winfo_toplevel(), self.database, self.grid_config)
         self.wait_window(dialog)
@@ -933,6 +973,7 @@ class GridEditorPanel(ttk.Frame):
             self.update_labels()
 
     def delete_grid(self):
+        """Prompt for confirmation and invoke the on_delete callback."""
         if Messagebox.yesno(f"Delete grid '{self.id_var.get()}'?", title="Confirm") == "Yes":
             if self.on_delete:
                 self.on_delete(self)
@@ -946,6 +987,7 @@ class GridsTab(ttk.Frame):
     def __init__(self, parent, database, app_version, profiles_path,
                  on_modified=None, on_open_database=None, status_var=None,
                  game_path_var=None, assets_path=None):
+        """Initialize the grids tab with profile paths, database, and callbacks."""
         super().__init__(parent)
         self.database = database
         self.app_version = app_version

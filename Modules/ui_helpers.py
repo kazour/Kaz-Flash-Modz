@@ -180,21 +180,25 @@ def bind_card_events(card_border, color, var=None):
     clicking anywhere toggles it (skipping ttk.Checkbutton to avoid double-toggle).
     """
     def on_enter(e):
+        """Cancel any pending leave timer and apply the hover highlight."""
         if hasattr(card_border, '_hover_after') and card_border._hover_after is not None:
             card_border.after_cancel(card_border._hover_after)
             card_border._hover_after = None
         card_border.config(highlightbackground='#FFFFFF', highlightcolor='#FFFFFF')
 
     def on_leave(e):
+        """Schedule a debounced restore of the default border color."""
         card_border._hover_after = card_border.after(
             10, lambda: card_border.config(highlightbackground=color, highlightcolor=color))
 
     def on_click(e):
+        """Toggle the linked BooleanVar, skipping Checkbuttons to avoid double-toggle."""
         if isinstance(e.widget, ttk.Checkbutton):
             return
         var.set(not var.get())
 
     def bind_recursive(widget):
+        """Bind hover and click events to a widget and all its descendants."""
         widget.bind('<Enter>', on_enter, add='+')
         widget.bind('<Leave>', on_leave, add='+')
         if var is not None:
@@ -241,6 +245,7 @@ class CollapsibleSection(ttk.Frame):
 
     def __init__(self, parent, title="", accent_color=None, initially_open=False,
                  badge_text=None, badge_color=None):
+        """Initialize a collapsible section with a clickable header and togglable content area."""
         super().__init__(parent)
         self._is_open = initially_open
 
@@ -338,6 +343,7 @@ class CollapsibleSection(ttk.Frame):
 
     @property
     def is_open(self):
+        """Return whether the section content is currently visible."""
         return self._is_open
 
 
@@ -392,6 +398,7 @@ def init_settings(settings):
 # WINDOW POSITION HELPERS
 # ============================================================================
 def clamp_to_screen(x, y, width, height):
+    """Clamp window coordinates so the window stays within screen bounds."""
     try:
         root = tk._default_root
         if root:
@@ -407,6 +414,7 @@ def clamp_to_screen(x, y, width, height):
 
 
 def save_window_position(window_name, x, y, width=None, height=None):
+    """Persist a window's position and optional size to settings."""
     if _settings:
         pos_data = {'x': x, 'y': y}
         if width is not None:
@@ -418,6 +426,7 @@ def save_window_position(window_name, x, y, width=None, height=None):
 
 
 def restore_window_position(window, window_name, default_width, default_height, parent=None, resizable=True):
+    """Restore a window's saved position and size, or center it as a fallback."""
     pos_data = _settings.get(f'window_pos_{window_name}') if _settings else None
 
     if pos_data:
@@ -444,6 +453,7 @@ def restore_window_position(window, window_name, default_width, default_height, 
 
 
 def bind_window_position_save(window, window_name, save_size=True):
+    """Bind a debounced Configure handler that auto-saves window position on move or resize."""
     save_timer = [None]  # Mutable container for closure
 
     def _do_save():
@@ -455,6 +465,7 @@ def bind_window_position_save(window, window_name, save_size=True):
             save_window_position(window_name, window.winfo_x(), window.winfo_y())
 
     def on_configure(event):
+        """Schedule a debounced position save when the window is moved or resized."""
         if event.widget == window and getattr(window, '_pos_initialized', False):
             # Debounce: only save 300ms after the last configure event
             if save_timer[0] is not None:
@@ -525,6 +536,7 @@ class ColorSwatch(tk.Canvas):
     BORDER_HOVER = '#888888'
 
     def __init__(self, parent, color_var=None, on_change=None, initial_color='#FFFFFF', **kwargs):
+        """Initialize a color swatch canvas with optional variable binding and click-to-pick."""
         kwargs.setdefault('highlightthickness', 0)
         kwargs.setdefault('cursor', 'hand2')
         super().__init__(parent, width=self.WIDTH, height=self.HEIGHT, **kwargs)

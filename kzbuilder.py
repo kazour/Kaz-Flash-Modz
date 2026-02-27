@@ -61,12 +61,16 @@ PROFILES_DIR = "profiles"
 # SETTINGS MANAGER
 # ============================================================================
 class SettingsManager:
+    """Manage persistent application settings stored as JSON."""
+
     def __init__(self, filepath):
+        """Initialize the settings manager and load settings from the given file path."""
         self.filepath = Path(filepath)
         self.data = {}
         self.load()
 
     def load(self):
+        """Load settings from the JSON file on disk."""
         if self.filepath.exists():
             try:
                 with open(self.filepath, 'r', encoding='utf-8') as f:
@@ -76,6 +80,7 @@ class SettingsManager:
                 self.data = {}
 
     def save(self):
+        """Write current settings to the JSON file on disk."""
         try:
             self.filepath.parent.mkdir(parents=True, exist_ok=True)
             with open(self.filepath, 'w', encoding='utf-8') as f:
@@ -84,9 +89,11 @@ class SettingsManager:
             logger.error("Error saving settings to %s: %s", self.filepath, e)
 
     def get(self, key, default=None):
+        """Return the value for a setting key, or default if not found."""
         return self.data.get(key, default)
 
     def set(self, key, value):
+        """Store a value for the given setting key."""
         self.data[key] = value
 
 
@@ -94,7 +101,10 @@ class SettingsManager:
 # MAIN APPLICATION
 # ============================================================================
 class KzBuilder(ttb.Window):
+    """Main application window for KzBuilder."""
+
     def __init__(self):
+        """Initialize the main application window, settings, database, and UI components."""
         super().__init__(themename="darkly")
         self.withdraw()  # Hide during setup to prevent position jump
         self.title(f"{APP_NAME} v{APP_VERSION}")
@@ -148,6 +158,7 @@ class KzBuilder(ttb.Window):
             self.after(100, self._show_first_launch_dialog)
 
     def create_widgets(self):
+        """Build and lay out all menus, tabs, and UI controls for the main window."""
         # Build menu bar (hidden by default, shown on Alt press)
         self._menubar = tk.Menu(self)
 
@@ -442,6 +453,7 @@ class KzBuilder(ttb.Window):
         ttk.Entry(path_frame, textvariable=path_var, width=50).pack(side='left', fill='x', expand=True)
 
         def browse():
+            """Open a directory chooser to select the game installation folder."""
             path = filedialog.askdirectory(title="Select Age of Conan Folder", parent=dialog)
             if path:
                 path_var.set(path)
@@ -461,6 +473,7 @@ class KzBuilder(ttb.Window):
                         variable=backup_textcolors_var, style="success-round-toggle").pack(anchor='w', padx=(15, 0))
 
         def confirm():
+            """Validate the selected path, save it, and create optional backups."""
             path = path_var.get()
             if path and Path(path).is_dir():
                 self.game_path.set(path)
@@ -499,6 +512,7 @@ class KzBuilder(ttb.Window):
                 Messagebox.show_warning("The selected folder does not exist.", title="Invalid Path", parent=dialog)
 
         def skip():
+            """Dismiss the first-launch dialog without selecting a game folder."""
             dialog.destroy()
 
         btn_frame = ttk.Frame(frame)
@@ -607,6 +621,7 @@ class KzBuilder(ttb.Window):
             self.live_tracker_tab.set_profile_name(name)
 
     def save_all_panels(self):
+        """Persist in-memory settings for every tab to their backing stores."""
         errors = []
         tabs = [
             ("Grids", self.grids_tab),
@@ -632,6 +647,7 @@ class KzBuilder(ttb.Window):
             )
 
     def new_profile(self):
+        """Reset all tabs to defaults and start a new unsaved profile."""
         if self.modified:
             if Messagebox.yesno("Discard unsaved changes?", title="Unsaved Changes") == "No":
                 return
@@ -653,6 +669,7 @@ class KzBuilder(ttb.Window):
         self._set_profile_name_all_tabs("New profile (unsaved)")
 
     def open_profile(self):
+        """Prompt the user to select and load a profile JSON file."""
         path = filedialog.askopenfilename(title="Open Profile", initialdir=str(self.profiles_path),
                                           filetypes=[("JSON", "*.json"), ("All", "*.*")])
         if not path:
@@ -725,18 +742,21 @@ class KzBuilder(ttb.Window):
             Messagebox.show_error(f"Failed to apply profile:\n{e}", title="Error")
 
     def save_profile(self):
+        """Save the current profile to its existing path, or prompt for a new one."""
         if self.current_profile:
             self.do_save_profile(self.current_profile)
         else:
             self.save_profile_as()
 
     def save_profile_as(self):
+        """Prompt for a file path and save the current profile there."""
         path = filedialog.asksaveasfilename(title="Save Profile", initialdir=str(self.profiles_path),
                                             defaultextension=".json", filetypes=[("JSON", "*.json"), ("All", "*.*")])
         if path:
             self.do_save_profile(path)
 
     def do_save_profile(self, path):
+        """Collect data from all tabs and write the profile JSON to the given path."""
         self.save_all_panels()
         try:
             data = {
@@ -771,6 +791,7 @@ class KzBuilder(ttb.Window):
             Messagebox.show_error(f"Failed to save profile:\n{e}", title="Error")
 
     def browse_game(self):
+        """Open a directory chooser to set the game installation path."""
         path = filedialog.askdirectory(title="Select Age of Conan Folder")
         if path:
             self.game_path.set(path)
@@ -1249,6 +1270,7 @@ class KzBuilder(ttb.Window):
                                preset_settings=preset_settings)
 
     def on_close(self):
+        """Handle window close by prompting to save unsaved changes and cleaning up."""
         if self.modified:
             result = Messagebox.yesnocancel("Save profile changes before closing?", title="Unsaved Profile")
             if result == "Cancel":

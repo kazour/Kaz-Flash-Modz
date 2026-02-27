@@ -17,22 +17,30 @@ from enum import Enum
 # =============================================================================
 
 class TriggerType(Enum):
+    """Events that can start a cooldown timer."""
+
     BUFF_ADD = "buff_add"
     BUFF_REMOVE = "buff_remove"
     CAST_SUCCESS = "cast_success"
 
 
 class BarDirection(Enum):
+    """Visual fill direction for the cooldown bar."""
+
     EMPTY = "empty"     # bar starts full, drains to empty
     FILL = "fill"       # bar starts empty, fills up
 
 
 class CountDirection(Enum):
+    """Direction the timer text counts — descending toward zero or ascending from zero."""
+
     DESCENDING = "descending"  # counts down: N → 0 (default)
     ASCENDING = "ascending"    # counts up: 0 → N
 
 
 class RetriggerMode(Enum):
+    """Behavior when a trigger fires while the timer is already running."""
+
     RESTART = "restart"   # reset timer to full duration
     IGNORE = "ignore"     # do nothing while running
 
@@ -80,6 +88,7 @@ class CooldownTimer:
     retrigger: str = "restart"              # RetriggerMode value
 
     def to_dict(self) -> Dict[str, Any]:
+        """Serialize this timer to a JSON-compatible dictionary."""
         return {
             "id": self.id,
             "name": self.name,
@@ -100,6 +109,7 @@ class CooldownTimer:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CooldownTimer":
+        """Create a CooldownTimer from a saved dictionary, applying defaults for missing keys."""
         trigger_type = data.get("trigger_type", TriggerType.BUFF_ADD.value)
 
         return cls(
@@ -128,6 +138,7 @@ class CooldownPreset:
     timer_ids: List[str] = field(default_factory=list)  # IDs of CooldownTimers
 
     def to_dict(self) -> Dict[str, Any]:
+        """Serialize this preset to a JSON-compatible dictionary."""
         return {
             "label": self.label,
             "timer_ids": list(self.timer_ids),
@@ -135,6 +146,7 @@ class CooldownPreset:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CooldownPreset":
+        """Create a CooldownPreset from a saved dictionary."""
         return cls(
             label=data.get("label", "")[:4],
             timer_ids=list(data.get("timer_ids", []))[:MAX_TIMERS_PER_PRESET],
@@ -154,6 +166,7 @@ class CooldownSettings:
     presets: List[CooldownPreset] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Serialize the full cooldown settings to a JSON-compatible dictionary."""
         return {
             "version": self.version,
             "enabled": self.enabled,
@@ -163,6 +176,7 @@ class CooldownSettings:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CooldownSettings":
+        """Create CooldownSettings from a saved dictionary, deserializing all nested timers and presets."""
         return cls(
             version=2,
             enabled=data.get("enabled", True),

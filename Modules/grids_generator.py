@@ -18,13 +18,17 @@ MAX_TOTAL_SLOTS = 64
 # CODE GENERATOR
 # ============================================================================
 class CodeGenerator:
+    """Generate AS2 source code for the KzGrids buff-tracking grid system."""
+
     def __init__(self, grids, database, app_version="3.3.5"):
+        """Initialize the code generator with grid configs and the buff database."""
         # Filter out disabled grids
         self.grids = [g for g in grids if g.get('enabled', True)]
         self.database = database
         self.app_version = app_version
 
     def sanitize_id(self, grid_id):
+        """Convert a grid ID to a safe AS2 identifier by replacing invalid characters."""
         safe = ""
         for c in grid_id:
             if c.isalnum() or c == '_':
@@ -36,6 +40,7 @@ class CodeGenerator:
         return safe or "Grid"
 
     def generate(self):
+        """Generate the complete AS2 source code for all enabled grids."""
         lines = []
         lines.append(self._header())
         lines.append(self._class_start())
