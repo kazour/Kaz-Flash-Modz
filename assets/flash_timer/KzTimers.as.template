@@ -1,0 +1,1204 @@
+import mx.utils.Delegate;
+
+class KzTimers
+{
+    // =======================================================================
+    // COMPILE-TIME CONFIG (Generated)
+    // =======================================================================
+
+    // Preset definitions: [{label:"...", timerIds:["id1","id2"]}]
+    private var presets:Array = [%%PRESETS_ARRAY%%];
+
+    // Signal connection flags
+    private var needsPlayerSignals:Boolean = %%NEEDS_PLAYER_SIGNALS%%;
+    private var needsTargetSignals:Boolean = %%NEEDS_TARGET_SIGNALS%%;
+
+    // =======================================================================
+    // CONSTANTS
+    // =======================================================================
+
+    private var COLOR_DEFAULT:Number = 0x%%COLOR_TEXT%%;
+    private var COLOR_BORDER:Number = 0x%%COLOR_BORDER%%;
+    private var COLOR_BG:Number = 0x%%COLOR_BG%%;
+    private var COLOR_BUTTON_BG:Number = 0x%%COLOR_BUTTON_BG%%;
+    private var COLOR_BUTTON_BORDER:Number = 0x%%COLOR_BUTTON_BORDER%%;
+    private var COLOR_BUTTON_HOVER:Number = 0x%%COLOR_BUTTON_HOVER%%;
+    private var COLOR_BUTTON_ACTIVE:Number = 0x%%COLOR_BUTTON_ACTIVE%%;
+    private var COLOR_BUTTON_INACTIVE:Number = 0x%%COLOR_BUTTON_INACTIVE%%;
+
+    private var BG_OPACITY:Number = %%BG_OPACITY%%;
+    private var BORDER_WIDTH_VAL:Number = %%BORDER_WIDTH%%;
+    private var CORNER_RADIUS:Number = %%CORNER_RADIUS%%;
+    private var FONT_SIZE_VAL:Number = %%FONT_SIZE%%;
+    private var FONT_FAMILY:String = "Arial";
+    private var FONT_BOLD:Boolean = %%FONT_BOLD%%;
+    private var SHADOW_ENABLED:Boolean = %%SHADOW_ENABLED%%;
+    private var COLOR_SHADOW:Number = 0x%%SHADOW_COLOR%%;
+
+    private var PANEL_WIDTH:Number = %%PANEL_WIDTH%%;
+    private var BAR_HEIGHT:Number = %%BAR_HEIGHT%%;
+    private var BAR_GAP:Number = 2;
+    private var GROW_DIRECTION:String = "%%GROW_DIRECTION%%";  // "down" or "up"
+    private var MAX_BARS:Number = %%MAX_BARS%%;
+
+    private var TEXT_OFFSET_X:Number = %%TEXT_OFFSET_X%%;
+    private var TEXT_OFFSET_Y:Number = %%TEXT_OFFSET_Y%%;
+    private var POS_X:Number = %%POS_X%%;
+    private var POS_Y:Number = %%POS_Y%%;
+    private var BUTTON_SHAPE:String = "%%BUTTON_SHAPE%%";
+
+    private var HEADER_HEIGHT:Number = 4;
+    private var PRESET_ROW_HEIGHT:Number = 30;
+
+    private var UPDATE_INTERVAL_MS:Number = 33;
+
+    // =======================================================================
+    // REFERENCES
+    // =======================================================================
+
+    private var rootClip:MovieClip;
+    private var config:Object;
+    private var m_Timer:MovieClip;
+    private var m_BarContainer:MovieClip;
+    private var m_Player:Object;
+    private var m_Target:Object;
+
+    // =======================================================================
+    // STATE
+    // =======================================================================
+
+    private var engine:TimerManager;
+    private var activePresetIndex:Number = -1;
+    private var updateInterval:Number = null;
+    private var savedX:Number;
+    private var savedY:Number;
+    private var lastPlayerSpell:String = "";
+    private var lastTargetSpell:String = "";
+
+    // Bar pool
+    private var barPool:Array;
+    private var barPoolSize:Number;
+    private var lastBarCount:Number = -1;
+
+    // Preview mode
+    private var previewMode:Boolean;
+    private var previewKeyArmed:Boolean;
+    private var previewOverlay:MovieClip;
+    private var coordsTF:TextField;
+    private var hideModule:Boolean;
+
+    // =======================================================================
+    // TEXT FORMATS
+    // =======================================================================
+
+    private var fmtBarLabel:TextFormat;
+    private var fmtBarTime:TextFormat;
+    private var fmtShadowLabel:TextFormat;
+    private var fmtShadowTime:TextFormat;
+    private var fmtButtonNormal:TextFormat;
+    private var fmtButtonHover:TextFormat;
+    private var fmtButtonActive:TextFormat;
+
+    // =======================================================================
+    // CONSTRUCTOR
+    // =======================================================================
+
+    public function KzTimers(root:MovieClip)
+    {
+        rootClip = root;
+        engine = new TimerManager();
+        barPool = [];
+        barPoolSize = 0;
+    }
+
+    public static function main(root:MovieClip):Void
+    {
+        var module:KzTimers = new KzTimers(root);
+        root.m_Module = module;
+        module.onLoad();
+    }
+
+    // =======================================================================
+    // LIFECYCLE
+    // =======================================================================
+
+    public function OnModuleActivated(archive:Object):Object
+    {
+        config = archive;
+        if (config)
+        {
+            savedX = config.FindEntry("x");
+            savedY = config.FindEntry("y");
+        }
+        initialize();
+        return config;
+    }
+
+    public function OnModuleDeactivated():Object
+    {
+        if (config && m_Timer)
+        {
+            config.ReplaceEntry("x", m_Timer._x);
+            config.ReplaceEntry("y", m_Timer._y);
+        }
+        cleanup();
+        return config;
+    }
+
+    public function onLoad():Void
+    {
+        Stage.showMenu = false;
+        initialize();
+    }
+
+    private function initialize():Void
+    {
+        cleanup();
+        initTextFormats();
+        createTimerUI();
+
+        // Position
+        var maxX:Number;
+        var maxY:Number;
+        if (savedX !== undefined && savedY !== undefined)
+        {
+            maxX = Stage.width - PANEL_WIDTH;
+            maxY = Stage.height - getMinPanelHeight();
+            m_Timer._x = Math.max(0, Math.min(savedX, maxX));
+            m_Timer._y = Math.max(0, Math.min(savedY, maxY));
+        }
+        else
+        {
+            m_Timer._x = POS_X;
+            m_Timer._y = POS_Y;
+        }
+
+        // Visibility
+        if (config)
+        {
+            var vis:Object = config.FindEntry("visible");
+            hideModule = (vis == undefined) ? true : (vis != 1);
+        }
+        else
+        {
+            hideModule = true;
+        }
+        m_Timer._visible = !hideModule;
+
+        updateDisplay();
+        updatePresetButtons();
+        initSignals();
+        initKeyListener();
+    }
+
+    private function cleanup():Void
+    {
+        stopUpdateLoop();
+        Key.removeListener(this);
+        try
+        {
+            com.GameInterface.Game.CharacterBase.SignalClientCharacterAlive.Disconnect(onClientCharAlive, this);
+        }
+        catch (e) {}
+        if (m_Player)
+        {
+            disconnectPlayer();
+            m_Player = null;
+        }
+        if (m_Target)
+        {
+            disconnectTarget();
+            m_Target = null;
+        }
+
+        if (engine)
+        {
+            engine.clearAll();
+        }
+        activePresetIndex = -1;
+
+        if (previewOverlay != null)
+        {
+            previewOverlay.removeMovieClip();
+            previewOverlay = null;
+        }
+        previewMode = false;
+        coordsTF = null;
+
+        // Clear bar pool
+        barPool = [];
+        barPoolSize = 0;
+        lastBarCount = -1;
+
+        if (m_Timer)
+        {
+            m_Timer._visible = false;
+            m_Timer.removeMovieClip();
+            m_Timer = null;
+        }
+        m_BarContainer = null;
+    }
+
+    // =======================================================================
+    // SIGNAL INITIALIZATION
+    // =======================================================================
+
+    private function initSignals():Void
+    {
+        if (!needsPlayerSignals && !needsTargetSignals) return;
+        try
+        {
+            com.GameInterface.Game.CharacterBase.SignalClientCharacterAlive.Connect(onClientCharAlive, this);
+            m_Player = com.GameInterface.Game.Character.GetClientCharacter();
+            if (m_Player) { onClientCharAlive(); }
+        }
+        catch (e) {}
+    }
+
+    // =======================================================================
+    // PLAYER SIGNAL CONNECTION
+    // =======================================================================
+
+    private function connectPlayer():Void
+    {
+        if (!m_Player) return;
+        if (needsPlayerSignals)
+        {
+            m_Player.SignalBuffAdded.Connect(onPlayerBuffAdded, this);
+            m_Player.SignalBuffUpdated.Connect(onPlayerBuffAdded, this);
+            m_Player.SignalBuffRemoved.Connect(onPlayerBuffRemoved, this);
+            m_Player.SignalCommandStarted.Connect(onPlayerCastStarted, this);
+            m_Player.SignalCommandEnded.Connect(onPlayerCastEnded, this);
+            m_Player.SignalCommandAborted.Connect(onPlayerCastAborted, this);
+            if (m_Player.ConnectToCommandQueue) { m_Player.ConnectToCommandQueue(); }
+        }
+        if (needsTargetSignals)
+        {
+            m_Player.SignalOffensiveTargetChanged.Connect(onTargetChanged, this);
+        }
+    }
+
+    private function disconnectPlayer():Void
+    {
+        if (!m_Player) return;
+        try
+        {
+            if (needsPlayerSignals)
+            {
+                m_Player.SignalBuffAdded.Disconnect(onPlayerBuffAdded, this);
+                m_Player.SignalBuffUpdated.Disconnect(onPlayerBuffAdded, this);
+                m_Player.SignalBuffRemoved.Disconnect(onPlayerBuffRemoved, this);
+                m_Player.SignalCommandStarted.Disconnect(onPlayerCastStarted, this);
+                m_Player.SignalCommandEnded.Disconnect(onPlayerCastEnded, this);
+                m_Player.SignalCommandAborted.Disconnect(onPlayerCastAborted, this);
+            }
+            if (needsTargetSignals)
+            {
+                m_Player.SignalOffensiveTargetChanged.Disconnect(onTargetChanged, this);
+            }
+        }
+        catch (e) {}
+    }
+
+    // =======================================================================
+    // TARGET SIGNAL CONNECTION
+    // =======================================================================
+
+    private function connectTarget():Void
+    {
+        if (!m_Target) return;
+        m_Target.SignalBuffAdded.Connect(onTargetBuffAdded, this);
+        m_Target.SignalBuffUpdated.Connect(onTargetBuffAdded, this);
+        m_Target.SignalBuffRemoved.Connect(onTargetBuffRemoved, this);
+        m_Target.SignalCommandStarted.Connect(onTargetCastStarted, this);
+        m_Target.SignalCommandEnded.Connect(onTargetCastEnded, this);
+        m_Target.SignalCommandAborted.Connect(onTargetCastAborted, this);
+        if (m_Target.ConnectToCommandQueue) { m_Target.ConnectToCommandQueue(); }
+    }
+
+    private function disconnectTarget():Void
+    {
+        if (!m_Target) return;
+        try
+        {
+            m_Target.SignalBuffAdded.Disconnect(onTargetBuffAdded, this);
+            m_Target.SignalBuffUpdated.Disconnect(onTargetBuffAdded, this);
+            m_Target.SignalBuffRemoved.Disconnect(onTargetBuffRemoved, this);
+            m_Target.SignalCommandStarted.Disconnect(onTargetCastStarted, this);
+            m_Target.SignalCommandEnded.Disconnect(onTargetCastEnded, this);
+            m_Target.SignalCommandAborted.Disconnect(onTargetCastAborted, this);
+        }
+        catch (e) {}
+    }
+
+    private function onClientCharAlive():Void
+    {
+        try
+        {
+            if (m_Player) { disconnectPlayer(); }
+            if (m_Target) { disconnectTarget(); m_Target = null; }
+            m_Player = com.GameInterface.Game.Character.GetClientCharacter();
+            if (m_Player)
+            {
+                connectPlayer();
+                if (needsTargetSignals)
+                {
+                    var target:Object = m_Player.GetOffensiveTarget();
+                    if (target && target.GetType() != _global.Enums.TypeID.e_Type_None)
+                    {
+                        m_Target = com.GameInterface.Game.Character.GetCharacter(target);
+                        if (m_Target) { connectTarget(); }
+                    }
+                }
+            }
+        }
+        catch (e)
+        {
+            // Character system may not be ready — retry in 1 second
+            var self:KzTimers = this;
+            setTimeout(function() { self.onClientCharAlive(); }, 1000);
+        }
+    }
+
+    private function onTargetChanged(targetId:Object):Void
+    {
+        if (m_Target) { disconnectTarget(); }
+        if (!targetId || targetId.GetType() == _global.Enums.TypeID.e_Type_None)
+        {
+            m_Target = null;
+            return;
+        }
+        m_Target = com.GameInterface.Game.Character.GetCharacter(targetId);
+        if (m_Target) { connectTarget(); }
+    }
+
+    // =======================================================================
+    // PLAYER SIGNAL HANDLERS
+    // =======================================================================
+
+    private function onPlayerBuffAdded(bid:Number):Void
+    {
+        engine.onBuffAdded(bid, "p");
+        if (engine.hasAnyActivity()) startUpdateLoop();
+    }
+
+    private function onPlayerBuffRemoved(buffId:Number):Void
+    {
+        engine.onBuffRemoved(buffId, "p");
+    }
+
+    private function onPlayerCastStarted(spellName:String):Void
+    {
+        lastPlayerSpell = spellName;
+    }
+
+    private function onPlayerCastEnded():Void
+    {
+        if (lastPlayerSpell != "")
+        {
+            engine.onCastEnded(lastPlayerSpell, "p");
+            if (engine.hasAnyActivity()) startUpdateLoop();
+        }
+        lastPlayerSpell = "";
+    }
+
+    private function onPlayerCastAborted():Void
+    {
+        lastPlayerSpell = "";
+    }
+
+    // =======================================================================
+    // TARGET SIGNAL HANDLERS
+    // =======================================================================
+
+    private function onTargetBuffAdded(bid:Number):Void
+    {
+        engine.onBuffAdded(bid, "t");
+        if (engine.hasAnyActivity()) startUpdateLoop();
+    }
+
+    private function onTargetBuffRemoved(buffId:Number):Void
+    {
+        engine.onBuffRemoved(buffId, "t");
+    }
+
+    private function onTargetCastStarted(spellName:String):Void
+    {
+        lastTargetSpell = spellName;
+    }
+
+    private function onTargetCastEnded():Void
+    {
+        if (lastTargetSpell != "")
+        {
+            engine.onCastEnded(lastTargetSpell, "t");
+            if (engine.hasAnyActivity()) startUpdateLoop();
+        }
+        lastTargetSpell = "";
+    }
+
+    private function onTargetCastAborted():Void
+    {
+        lastTargetSpell = "";
+    }
+
+    // =======================================================================
+    // PRESET HANDLERS
+    // =======================================================================
+
+    private function onPresetClick(presetIndex:Number):Void
+    {
+        if (presetIndex < 0 || presetIndex >= presets.length) return;
+
+        if (activePresetIndex == presetIndex)
+        {
+            // Toggle off — restore original enabled states
+            engine.restoreOriginalEnabled();
+            activePresetIndex = -1;
+        }
+        else
+        {
+            // Switch to preset — enable only its timers (arm them for listening)
+            engine.clearAll();
+            engine.setEnabledTimers(presets[presetIndex].timerIds);
+            activePresetIndex = presetIndex;
+        }
+
+        updateDisplay();
+        updatePresetButtons();
+    }
+
+    private function updatePresetButtons():Void
+    {
+        if (!m_Timer) return;
+
+        var i:Number = 0;
+        while (i < presets.length)
+        {
+            var btn:MovieClip = m_Timer["presetBtn" + i];
+            if (btn && btn.labelText)
+            {
+                if (i == activePresetIndex)
+                {
+                    btn.labelText.setTextFormat(fmtButtonActive);
+                }
+                else
+                {
+                    btn.labelText.setTextFormat(fmtButtonNormal);
+                }
+            }
+            i++;
+        }
+    }
+
+    // =======================================================================
+    // TEXT FORMATS
+    // =======================================================================
+
+    private function initTextFormats():Void
+    {
+        fmtBarLabel = new TextFormat();
+        fmtBarLabel.font = FONT_FAMILY;
+        fmtBarLabel.size = FONT_SIZE_VAL;
+        fmtBarLabel.bold = FONT_BOLD;
+        fmtBarLabel.align = "left";
+        fmtBarLabel.color = COLOR_DEFAULT;
+
+        fmtBarTime = new TextFormat();
+        fmtBarTime.font = FONT_FAMILY;
+        fmtBarTime.size = FONT_SIZE_VAL;
+        fmtBarTime.bold = FONT_BOLD;
+        fmtBarTime.align = "right";
+        fmtBarTime.color = COLOR_DEFAULT;
+
+        fmtShadowLabel = new TextFormat();
+        fmtShadowLabel.font = FONT_FAMILY;
+        fmtShadowLabel.size = FONT_SIZE_VAL;
+        fmtShadowLabel.bold = FONT_BOLD;
+        fmtShadowLabel.align = "left";
+        fmtShadowLabel.color = COLOR_SHADOW;
+
+        fmtShadowTime = new TextFormat();
+        fmtShadowTime.font = FONT_FAMILY;
+        fmtShadowTime.size = FONT_SIZE_VAL;
+        fmtShadowTime.bold = FONT_BOLD;
+        fmtShadowTime.align = "right";
+        fmtShadowTime.color = COLOR_SHADOW;
+
+        fmtButtonNormal = new TextFormat();
+        fmtButtonNormal.font = FONT_FAMILY;
+        fmtButtonNormal.size = 9;
+        fmtButtonNormal.bold = true;
+        fmtButtonNormal.align = "center";
+        fmtButtonNormal.color = COLOR_BUTTON_INACTIVE;
+
+        fmtButtonHover = new TextFormat();
+        fmtButtonHover.font = FONT_FAMILY;
+        fmtButtonHover.size = 9;
+        fmtButtonHover.bold = true;
+        fmtButtonHover.align = "center";
+        fmtButtonHover.color = 0xFFFFFF;
+
+        fmtButtonActive = new TextFormat();
+        fmtButtonActive.font = FONT_FAMILY;
+        fmtButtonActive.size = 10;
+        fmtButtonActive.bold = true;
+        fmtButtonActive.align = "center";
+        fmtButtonActive.color = COLOR_BUTTON_ACTIVE;
+    }
+
+    // =======================================================================
+    // DISPLAY UPDATE
+    // =======================================================================
+
+    private function updateDisplay():Void
+    {
+        if (!m_Timer) return;
+
+        var now:Number = getTimer();
+        engine.update(now);
+
+        var count:Number = engine.getActiveCount();
+        if (count > MAX_BARS) count = MAX_BARS;
+
+        // Ensure enough bars in pool
+        while (barPoolSize < count)
+        {
+            createBarInPool(barPoolSize);
+            barPoolSize++;
+        }
+
+        // Update visible bars
+        var barY:Number = 0;
+        var i:Number = 0;
+        while (i < count)
+        {
+            var state:Object = engine.getTimerState(i, now);
+            if (state == null)
+            {
+                i++;
+                continue;
+            }
+
+            var bar:MovieClip = barPool[i];
+            bar._visible = true;
+
+            if (GROW_DIRECTION == "up")
+            {
+                bar._y = -barY - BAR_HEIGHT;
+            }
+            else
+            {
+                bar._y = barY;
+            }
+
+            // Update bar fill — scale instead of redraw
+            var fill:MovieClip = bar.fill;
+            if (bar.lastColor != state.color)
+            {
+                var barW:Number = PANEL_WIDTH - 8;
+                fill.clear();
+                fill.beginFill(state.color, 80);
+                fill.moveTo(0, 0);
+                fill.lineTo(barW, 0);
+                fill.lineTo(barW, BAR_HEIGHT - 4);
+                fill.lineTo(0, BAR_HEIGHT - 4);
+                fill.lineTo(0, 0);
+                fill.endFill();
+                bar.lastColor = state.color;
+            }
+            fill._xscale = state.progress * 100;
+
+            // Update label — only when timer identity changes
+            if (bar.lastId != state.id)
+            {
+                var labelTf:TextField = bar.labelTf;
+                labelTf.text = state.label;
+                labelTf.setTextFormat(fmtBarLabel);
+                if (SHADOW_ENABLED)
+                {
+                    var labelSh:TextField = bar.labelSh;
+                    if (labelSh != null)
+                    {
+                        labelSh.text = state.label;
+                        labelSh.setTextFormat(fmtShadowLabel);
+                    }
+                }
+                bar.lastId = state.id;
+            }
+
+            // Update time — only when display string changes
+            if (bar.lastTimeStr != state.timeStr)
+            {
+                var timeTf:TextField = bar.timeTf;
+                timeTf.text = state.timeStr;
+                timeTf.setTextFormat(fmtBarTime);
+                if (SHADOW_ENABLED)
+                {
+                    var timeSh:TextField = bar.timeSh;
+                    if (timeSh != null)
+                    {
+                        timeSh.text = state.timeStr;
+                        timeSh.setTextFormat(fmtShadowTime);
+                    }
+                }
+                bar.lastTimeStr = state.timeStr;
+            }
+
+            barY = barY + BAR_HEIGHT + BAR_GAP;
+            i++;
+        }
+
+        // Hide unused bars and reset cache
+        while (i < barPoolSize)
+        {
+            barPool[i]._visible = false;
+            barPool[i].lastId = null;
+            barPool[i].lastTimeStr = null;
+            i++;
+        }
+
+        // Resize background only when timer count changes
+        if (count != lastBarCount)
+        {
+            resizePanel(count);
+            lastBarCount = count;
+        }
+
+        // Stop update loop if nothing is active
+        if (!engine.hasAnyActivity())
+        {
+            stopUpdateLoop();
+        }
+    }
+
+    private function resizePanel(barCount:Number):Void
+    {
+        if (!m_Timer) return;
+        var headerH:Number = HEADER_HEIGHT;
+        if (presets.length > 0) headerH = headerH + PRESET_ROW_HEIGHT;
+
+        var barsH:Number = barCount * (BAR_HEIGHT + BAR_GAP);
+        if (barsH > 0) barsH = barsH - BAR_GAP;  // no trailing gap
+        var totalH:Number = headerH + barsH + 6;
+        if (totalH < headerH + 10) totalH = headerH + 10;
+
+        // Redraw background
+        var bg:MovieClip = m_Timer.bg;
+        bg.clear();
+        bg.beginFill(COLOR_BG, BG_OPACITY);
+        if (CORNER_RADIUS > 0)
+        {
+            drawRoundRect(bg, 1, 1, PANEL_WIDTH - 2, totalH - 2, CORNER_RADIUS > 1 ? CORNER_RADIUS - 1 : 1);
+        }
+        else
+        {
+            bg.moveTo(1, 1);
+            bg.lineTo(PANEL_WIDTH - 1, 1);
+            bg.lineTo(PANEL_WIDTH - 1, totalH - 1);
+            bg.lineTo(1, totalH - 1);
+            bg.lineTo(1, 1);
+        }
+        bg.endFill();
+
+        // Redraw border
+        var border:MovieClip = m_Timer.border;
+        border.clear();
+        border.lineStyle(BORDER_WIDTH_VAL, COLOR_BORDER, 100);
+        if (CORNER_RADIUS > 0)
+        {
+            drawRoundRect(border, 0, 0, PANEL_WIDTH, totalH, CORNER_RADIUS);
+        }
+        else
+        {
+            border.moveTo(0, 0);
+            border.lineTo(PANEL_WIDTH, 0);
+            border.lineTo(PANEL_WIDTH, totalH);
+            border.lineTo(0, totalH);
+            border.lineTo(0, 0);
+        }
+    }
+
+    // =======================================================================
+    // UPDATE LOOP
+    // =======================================================================
+
+    private function startUpdateLoop():Void
+    {
+        if (updateInterval != null) return;
+        var self:KzTimers = this;
+        updateInterval = setInterval(function()
+        {
+            self.updateDisplay();
+        }, UPDATE_INTERVAL_MS);
+    }
+
+    private function stopUpdateLoop():Void
+    {
+        if (updateInterval != null)
+        {
+            clearInterval(updateInterval);
+            updateInterval = null;
+        }
+    }
+
+    // =======================================================================
+    // UI CREATION
+    // =======================================================================
+
+    private function getMinPanelHeight():Number
+    {
+        var h:Number = HEADER_HEIGHT + 10;
+        if (presets.length > 0) h = h + PRESET_ROW_HEIGHT;
+        return h;
+    }
+
+    private function drawRoundRect(mc:MovieClip, x:Number, y:Number, w:Number, h:Number, r:Number):Void
+    {
+        mc.moveTo(x + r, y);
+        mc.lineTo(x + w - r, y);
+        mc.curveTo(x + w, y, x + w, y + r);
+        mc.lineTo(x + w, y + h - r);
+        mc.curveTo(x + w, y + h, x + w - r, y + h);
+        mc.lineTo(x + r, y + h);
+        mc.curveTo(x, y + h, x, y + h - r);
+        mc.lineTo(x, y + r);
+        mc.curveTo(x, y, x + r, y);
+    }
+
+    private function getButtonRadius(h:Number):Number
+    {
+        if (BUTTON_SHAPE == "pill") return Math.floor(h / 2);
+        if (BUTTON_SHAPE == "rounded") return 3;
+        return 0;
+    }
+
+    private function drawButtonBg(btn:MovieClip, fillColor:Number, fillAlpha:Number):Void
+    {
+        var r:Number = getButtonRadius(btn.btnHeight);
+        btn.bg.clear();
+        btn.bg.beginFill(fillColor, fillAlpha);
+        if (r > 0)
+        {
+            drawRoundRect(btn.bg, 1, 1, btn.btnWidth - 2, btn.btnHeight - 2, Math.max(1, r - 1));
+        }
+        else
+        {
+            btn.bg.moveTo(1, 1);
+            btn.bg.lineTo(btn.btnWidth - 1, 1);
+            btn.bg.lineTo(btn.btnWidth - 1, btn.btnHeight - 1);
+            btn.bg.lineTo(1, btn.btnHeight - 1);
+            btn.bg.lineTo(1, 1);
+        }
+        btn.bg.endFill();
+    }
+
+    private function createTimerUI():Void
+    {
+        m_Timer = rootClip.createEmptyMovieClip("m_Timer", rootClip.getNextHighestDepth());
+        var minH:Number = getMinPanelHeight();
+
+        // Border
+        var border:MovieClip = m_Timer.createEmptyMovieClip("border", m_Timer.getNextHighestDepth());
+        border.lineStyle(BORDER_WIDTH_VAL, COLOR_BORDER, 100);
+        if (CORNER_RADIUS > 0)
+        {
+            drawRoundRect(border, 0, 0, PANEL_WIDTH, minH, CORNER_RADIUS);
+        }
+        else
+        {
+            border.moveTo(0, 0);
+            border.lineTo(PANEL_WIDTH, 0);
+            border.lineTo(PANEL_WIDTH, minH);
+            border.lineTo(0, minH);
+            border.lineTo(0, 0);
+        }
+
+        // Background
+        var bg:MovieClip = m_Timer.createEmptyMovieClip("bg", m_Timer.getNextHighestDepth());
+        bg.beginFill(COLOR_BG, BG_OPACITY);
+        if (CORNER_RADIUS > 0)
+        {
+            drawRoundRect(bg, 1, 1, PANEL_WIDTH - 2, minH - 2, CORNER_RADIUS > 1 ? CORNER_RADIUS - 1 : 1);
+        }
+        else
+        {
+            bg.moveTo(1, 1);
+            bg.lineTo(PANEL_WIDTH - 1, 1);
+            bg.lineTo(PANEL_WIDTH - 1, minH - 1);
+            bg.lineTo(1, minH - 1);
+            bg.lineTo(1, 1);
+        }
+        bg.endFill();
+
+        // Preset buttons (no title header — buttons are at the top)
+        createPresetButtons();
+
+        // Divider line between buttons and bars
+        if (presets.length > 0)
+        {
+            var divY:Number = HEADER_HEIGHT + PRESET_ROW_HEIGHT - 5;
+            var divider:MovieClip = m_Timer.createEmptyMovieClip("divider", m_Timer.getNextHighestDepth());
+            divider.lineStyle(1, COLOR_BORDER, 50);
+            divider.moveTo(8, divY);
+            divider.lineTo(PANEL_WIDTH - 8, divY);
+        }
+
+        // Bar container
+        var barStartY:Number = HEADER_HEIGHT;
+        if (presets.length > 0) barStartY = barStartY + PRESET_ROW_HEIGHT;
+        m_BarContainer = m_Timer.createEmptyMovieClip("bars", m_Timer.getNextHighestDepth());
+        m_BarContainer._x = 4;
+        m_BarContainer._y = barStartY;
+    }
+
+    private function createBarInPool(index:Number):Void
+    {
+        var barW:Number = PANEL_WIDTH - 8;
+        var bar:MovieClip = m_BarContainer.createEmptyMovieClip(
+            "bar" + index, m_BarContainer.getNextHighestDepth());
+
+        // Background track
+        var track:MovieClip = bar.createEmptyMovieClip("track", bar.getNextHighestDepth());
+        track.beginFill(0x222222, 60);
+        track.moveTo(0, 0);
+        track.lineTo(barW, 0);
+        track.lineTo(barW, BAR_HEIGHT - 4);
+        track.lineTo(0, BAR_HEIGHT - 4);
+        track.lineTo(0, 0);
+        track.endFill();
+
+        // Fill (drawn once at full width, scaled via _xscale each frame)
+        var fill:MovieClip = bar.createEmptyMovieClip("fill", bar.getNextHighestDepth());
+        fill.beginFill(0x999999, 80);
+        fill.moveTo(0, 0);
+        fill.lineTo(barW, 0);
+        fill.lineTo(barW, BAR_HEIGHT - 4);
+        fill.lineTo(0, BAR_HEIGHT - 4);
+        fill.lineTo(0, 0);
+        fill.endFill();
+        bar.lastColor = -1;
+        bar.lastId = null;
+        bar.lastTimeStr = null;
+
+        // Shadow text fields
+        if (SHADOW_ENABLED)
+        {
+            bar.createTextField("labelSh", bar.getNextHighestDepth(),
+                3 + TEXT_OFFSET_X, -1 + TEXT_OFFSET_Y, barW - 50, BAR_HEIGHT);
+            var labelSh:TextField = bar.labelSh;
+            labelSh.selectable = false;
+            labelSh.embedFonts = false;
+
+            bar.createTextField("timeSh", bar.getNextHighestDepth(),
+                barW - 51 + TEXT_OFFSET_X, -1 + TEXT_OFFSET_Y, 50, BAR_HEIGHT);
+            var timeSh:TextField = bar.timeSh;
+            timeSh.selectable = false;
+            timeSh.embedFonts = false;
+        }
+
+        // Label text
+        bar.createTextField("labelTf", bar.getNextHighestDepth(),
+            2 + TEXT_OFFSET_X, -2 + TEXT_OFFSET_Y, barW - 50, BAR_HEIGHT);
+        var labelTf:TextField = bar.labelTf;
+        labelTf.selectable = false;
+        labelTf.embedFonts = false;
+
+        // Time text
+        bar.createTextField("timeTf", bar.getNextHighestDepth(),
+            barW - 52 + TEXT_OFFSET_X, -2 + TEXT_OFFSET_Y, 50, BAR_HEIGHT);
+        var timeTf:TextField = bar.timeTf;
+        timeTf.selectable = false;
+        timeTf.embedFonts = false;
+
+        bar._visible = false;
+        barPool[index] = bar;
+    }
+
+    // =======================================================================
+    // PRESET BUTTONS
+    // =======================================================================
+
+    private function createPresetButtons():Void
+    {
+        if (!m_Timer || presets.length == 0) return;
+
+        var numPresets:Number = presets.length;
+        var gap:Number = 2;
+        var totalGap:Number = (numPresets - 1) * gap;
+        var availWidth:Number = PANEL_WIDTH - 20;
+        var btnWidth:Number = Math.floor((availWidth - totalGap) / numPresets);
+        if (btnWidth < 30) btnWidth = 30;
+        if (btnWidth > 80) btnWidth = 80;
+        var btnHeight:Number = 20;
+        var startX:Number = 10;
+        var startY:Number = HEADER_HEIGHT;
+
+        var i:Number = 0;
+        while (i < numPresets && i < 3)
+        {
+            var preset:Object = presets[i];
+            var xPos:Number = startX + (i * (btnWidth + gap));
+            var label:String = preset.label;
+            if (label == "") label = "P" + (i + 1);
+
+            var btn:MovieClip = createPresetButton(m_Timer, xPos, startY, btnWidth, btnHeight, label, i);
+            m_Timer["presetBtn" + i] = btn;
+            i++;
+        }
+    }
+
+    private function createPresetButton(parent:MovieClip, x:Number, y:Number, w:Number, h:Number, label:String, index:Number):MovieClip
+    {
+        var self:KzTimers = this;
+        var btn:MovieClip = createButton(parent, x, y, w, h, label, function()
+        {
+            self.onPresetClick(index);
+        });
+        return btn;
+    }
+
+    private function createButton(parent:MovieClip, x:Number, y:Number, w:Number, h:Number, label:String, callback:Function):MovieClip
+    {
+        var btnName:String = "btn_" + label.split(" ")[0] + "_" + parent.getNextHighestDepth();
+        var btn:MovieClip = parent.createEmptyMovieClip(btnName, parent.getNextHighestDepth());
+        btn._x = x;
+        btn._y = y;
+        btn.btnWidth = w;
+        btn.btnHeight = h;
+        btn.btnLabel = label;
+
+        // Border
+        var btnR:Number = getButtonRadius(h);
+        var border:MovieClip = btn.createEmptyMovieClip("border", btn.getNextHighestDepth());
+        border.lineStyle(1, COLOR_BUTTON_BORDER, 100);
+        if (btnR > 0)
+        {
+            drawRoundRect(border, 0, 0, w, h, btnR);
+        }
+        else
+        {
+            border.moveTo(0, 0);
+            border.lineTo(w, 0);
+            border.lineTo(w, h);
+            border.lineTo(0, h);
+            border.lineTo(0, 0);
+        }
+
+        // Background
+        var bg:MovieClip = btn.createEmptyMovieClip("bg", btn.getNextHighestDepth());
+        bg.beginFill(COLOR_BUTTON_BG, 90);
+        if (btnR > 0)
+        {
+            drawRoundRect(bg, 1, 1, w - 2, h - 2, Math.max(1, btnR - 1));
+        }
+        else
+        {
+            bg.moveTo(1, 1);
+            bg.lineTo(w - 1, 1);
+            bg.lineTo(w - 1, h - 1);
+            bg.lineTo(1, h - 1);
+            bg.lineTo(1, 1);
+        }
+        bg.endFill();
+
+        // Label
+        btn.createTextField("labelText", btn.getNextHighestDepth(), 0, 3, w, h);
+        var labelText:TextField = btn["labelText"];
+        labelText.selectable = false;
+        labelText.embedFonts = false;
+        labelText.text = label;
+        labelText.setTextFormat(fmtButtonNormal);
+
+        btn.onPress = callback;
+
+        var self:KzTimers = this;
+        btn.onRollOver = function()
+        {
+            self.drawButtonBg(this, self.COLOR_BUTTON_HOVER, 100);
+            this.labelText.setTextFormat(self.fmtButtonHover);
+        };
+        btn.onRollOut = function()
+        {
+            self.drawButtonBg(this, self.COLOR_BUTTON_BG, 90);
+            self.updatePresetButtons();
+        };
+
+        btn.useHandCursor = true;
+        return btn;
+    }
+
+    // =======================================================================
+    // PREVIEW MODE (Ctrl+Shift+Alt)
+    // =======================================================================
+
+    private function initKeyListener():Void
+    {
+        previewMode = false;
+        previewKeyArmed = true;
+        Key.addListener(this);
+    }
+
+    private function onKeyDown():Void
+    {
+        if (Key.isDown(16) && Key.isDown(17) && Key.isDown(18))
+        {
+            if (previewKeyArmed)
+            {
+                previewKeyArmed = false;
+                if (!previewMode) enterPreview();
+                else exitPreview();
+            }
+        }
+    }
+
+    private function onKeyUp():Void
+    {
+        if (!(Key.isDown(16) && Key.isDown(17) && Key.isDown(18)))
+        {
+            previewKeyArmed = true;
+        }
+    }
+
+    private function enterPreview():Void
+    {
+        if (previewMode) return;
+        previewMode = true;
+
+        m_Timer._visible = true;
+
+        var panelH:Number = getMinPanelHeight();
+
+        var ov:MovieClip = rootClip.createEmptyMovieClip("_timerOverlay", 9000);
+        previewOverlay = ov;
+        ov._x = m_Timer._x;
+        ov._y = m_Timer._y;
+
+        ov.lineStyle(2, 0xFFFFFF, 80);
+        ov.beginFill(0xF39C12, 20);
+        ov.moveTo(-2, -2);
+        ov.lineTo(PANEL_WIDTH + 2, -2);
+        ov.lineTo(PANEL_WIDTH + 2, panelH + 2);
+        ov.lineTo(-2, panelH + 2);
+        ov.lineTo(-2, -2);
+        ov.endFill();
+
+        var self:KzTimers = this;
+
+        var dragBg:MovieClip = ov.createEmptyMovieClip("dragBg", 1);
+        dragBg.beginFill(0, 0);
+        dragBg.moveTo(-2, -2);
+        dragBg.lineTo(PANEL_WIDTH + 2, -2);
+        dragBg.lineTo(PANEL_WIDTH + 2, panelH + 2);
+        dragBg.lineTo(-2, panelH + 2);
+        dragBg.lineTo(-2, -2);
+        dragBg.endFill();
+        dragBg.useHandCursor = true;
+
+        dragBg.onPress = function()
+        {
+            var mX:Number = Stage.width - self.PANEL_WIDTH;
+            var mY:Number = Stage.height - self.getMinPanelHeight();
+            self.previewOverlay.startDrag(false, 0, 0, mX, mY);
+            this.onMouseMove = function()
+            {
+                self.m_Timer._x = self.previewOverlay._x;
+                self.m_Timer._y = self.previewOverlay._y;
+                self.updatePreviewCoords();
+            };
+        };
+        dragBg.onRelease = dragBg.onReleaseOutside = function()
+        {
+            self.previewOverlay.stopDrag();
+            delete this.onMouseMove;
+            self.m_Timer._x = self.previewOverlay._x;
+            self.m_Timer._y = self.previewOverlay._y;
+            self.updatePreviewCoords();
+            if (self.config)
+            {
+                self.config.ReplaceEntry("x", self.m_Timer._x);
+                self.config.ReplaceEntry("y", self.m_Timer._y);
+            }
+        };
+
+        // Coordinate text
+        var tf:TextField = ov.createTextField("coords", ov.getNextHighestDepth(),
+            0, 0, PANEL_WIDTH, 20);
+        tf.selectable = false;
+        tf.embedFonts = false;
+        tf.html = true;
+        coordsTF = tf;
+        updatePreviewCoords();
+        tf._y = (panelH - tf.textHeight) / 2 - 10;
+
+        // Visibility checkbox
+        var cb:MovieClip = ov.createEmptyMovieClip("cb", ov.getNextHighestDepth());
+        cb._x = PANEL_WIDTH - 16;
+        cb._y = panelH - 16;
+
+        var box:MovieClip = cb.createEmptyMovieClip("box", 1);
+        box.lineStyle(1, 0xFFFFFF, 100);
+        box.beginFill(0x333333, 100);
+        box.moveTo(0, 0);
+        box.lineTo(12, 0);
+        box.lineTo(12, 12);
+        box.lineTo(0, 12);
+        box.lineTo(0, 0);
+        box.endFill();
+
+        var chk:MovieClip = cb.createEmptyMovieClip("chk", 2);
+        chk.lineStyle(2, 0x99DD66, 100);
+        chk.moveTo(2, 6);
+        chk.lineTo(5, 10);
+        chk.lineTo(10, 2);
+        chk._visible = !hideModule;
+
+        var hitArea:MovieClip = cb.createEmptyMovieClip("hit", 0);
+        hitArea.beginFill(0, 0);
+        hitArea.moveTo(-4, -4);
+        hitArea.lineTo(16, -4);
+        hitArea.lineTo(16, 16);
+        hitArea.lineTo(-4, 16);
+        hitArea.lineTo(-4, -4);
+        hitArea.endFill();
+        hitArea.useHandCursor = true;
+
+        hitArea.onPress = function()
+        {
+            self.hideModule = !self.hideModule;
+            chk._visible = !self.hideModule;
+        };
+    }
+
+    private function exitPreview():Void
+    {
+        if (!previewMode) return;
+        previewMode = false;
+        if (previewOverlay != null)
+        {
+            previewOverlay.removeMovieClip();
+            previewOverlay = null;
+        }
+        coordsTF = null;
+
+        m_Timer._visible = !hideModule;
+        if (config)
+        {
+            config.ReplaceEntry("visible", hideModule ? 0 : 1);
+        }
+        if (config && m_Timer)
+        {
+            config.ReplaceEntry("x", m_Timer._x);
+            config.ReplaceEntry("y", m_Timer._y);
+        }
+    }
+
+    private function updatePreviewCoords():Void
+    {
+        if (coordsTF == null) return;
+        coordsTF.htmlText = "<font face='Arial' size='14' color='#FFFFFF'><b>KzTimers</b></font> <font face='Arial' size='11' color='#FFFF00'><b>X:" + Math.round(previewOverlay._x) + " Y:" + Math.round(previewOverlay._y) + "</b></font>";
+        var fmt:TextFormat = new TextFormat();
+        fmt.align = "center";
+        coordsTF.setTextFormat(fmt);
+    }
+}

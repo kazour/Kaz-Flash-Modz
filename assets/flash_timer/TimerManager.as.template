@@ -1,0 +1,386 @@
+class TimerManager
+{
+    // =======================================================================
+    // COMPILE-TIME CONFIG (Generated)
+    // =======================================================================
+
+    private var allTimers:Array = [%%TIMERS_ARRAY%%];
+
+    // =======================================================================
+    // CONSTANTS
+    // =======================================================================
+
+    private var MAX_ACTIVE:Number = %%MAX_ACTIVE%%;
+    private var COLOR_DEFAULT:Number = 0x%%COLOR_TEXT%%;
+    private var SHOW_DECIMALS:Boolean = %%SHOW_DECIMALS%%;
+
+    // =======================================================================
+    // STATE — Active timer instances
+    // =======================================================================
+
+    // Each element is an Object:
+    //   { cfg:Object, startTime:Number, duration:Number, active:Boolean }
+    private var activeTimers:Array;
+    private var activeCount:Number;
+    private var statePool:Array;
+
+    // =======================================================================
+    // TRIGGER MAPS (built once on init from allTimers)
+    // =======================================================================
+
+    // buffTrigger[buffId] = { timerId:String, src:String, cfg:Object }
+    private var buffAddMap:Object;
+    private var buffRemMap:Object;
+    // castTrigger[spellName] = { timerId:String, src:String, cfg:Object }
+    private var castMap:Object;
+
+    // Original enabled states (saved at construction for preset restore)
+    private var originalEnabled:Array;
+
+    // =======================================================================
+    // CONSTRUCTOR
+    // =======================================================================
+
+    public function TimerManager()
+    {
+        activeTimers = [];
+        activeCount = 0;
+
+        // Pre-allocate state object pool (reused every update)
+        statePool = [];
+        var s:Number = 0;
+        while (s < MAX_ACTIVE)
+        {
+            statePool[s] = {label:null, timeStr:null, progress:0, color:0, id:null};
+            s++;
+        }
+
+        // Initialize empty trigger maps — no listening until a preset is clicked
+        buffAddMap = {};
+        buffRemMap = {};
+        castMap = {};
+
+        // Snapshot original enabled flags for preset restore
+        originalEnabled = [];
+        var j:Number = 0;
+        while (j < allTimers.length)
+        {
+            originalEnabled[j] = allTimers[j].enabled;
+            j++;
+        }
+    }
+
+    // =======================================================================
+    // TRIGGER MAPS
+    // =======================================================================
+
+    private function buildTriggerMaps():Void
+    {
+        buffAddMap = {};
+        buffRemMap = {};
+        castMap = {};
+
+        var i:Number = 0;
+        while (i < allTimers.length)
+        {
+            var cfg:Object = allTimers[i];
+            if (!cfg.enabled) { i++; continue; }
+
+            var src:String = cfg.triggerSource == "player" ? "p" : "t";
+
+            if (cfg.triggerType == "buff_add" && cfg.triggerBuffId != null)
+            {
+                buffAddMap[cfg.triggerBuffId] = {src:src, cfg:cfg};
+            }
+            else if (cfg.triggerType == "buff_remove" && cfg.triggerBuffId != null)
+            {
+                buffRemMap[cfg.triggerBuffId] = {src:src, cfg:cfg};
+            }
+            else if (cfg.triggerType == "cast_success" && cfg.triggerSpellName != null)
+            {
+                castMap[normalizeSpell(cfg.triggerSpellName)] = {src:src, cfg:cfg};
+            }
+            i++;
+        }
+    }
+
+    // =======================================================================
+    // TRIGGER INTERFACE (called by KzTimers signal handlers)
+    // =======================================================================
+
+    public function onBuffAdded(buffId:Number, source:String):Void
+    {
+        var entry:Object = buffAddMap[buffId];
+        if (entry == null) return;
+        if (entry.src != source) return;
+        startOrRetrigger(entry.cfg);
+    }
+
+    public function onBuffRemoved(buffId:Number, source:String):Void
+    {
+        var entry:Object = buffRemMap[buffId];
+        if (entry == null) return;
+        if (entry.src != source) return;
+        startOrRetrigger(entry.cfg);
+    }
+
+    public function onCastEnded(spellName:String, source:String):Void
+    {
+        if (spellName == "") return;
+        var entry:Object = castMap[normalizeSpell(spellName)];
+        if (entry == null) return;
+        if (entry.src != source) return;
+        startOrRetrigger(entry.cfg);
+    }
+
+    // =======================================================================
+    // TIMER LIFECYCLE
+    // =======================================================================
+
+    private function startOrRetrigger(cfg:Object):Void
+    {
+        // Check if this timer is already running
+        var i:Number = 0;
+        while (i < activeCount)
+        {
+            if (activeTimers[i].cfg.id == cfg.id)
+            {
+                // Already running
+                if (cfg.retrigger == "restart")
+                {
+                    // Reset to full duration
+                    activeTimers[i].startTime = getTimer();
+                    return;
+                }
+                else
+                {
+                    // Ignore
+                    return;
+                }
+            }
+            i++;
+        }
+
+        // Not running — start new instance
+        if (activeCount >= MAX_ACTIVE) return;
+
+        var instance:Object = {
+            cfg: cfg,
+            startTime: getTimer(),
+            duration: cfg.duration * 1000,  // convert to ms
+            active: true
+        };
+
+        activeTimers[activeCount] = instance;
+        activeCount++;
+    }
+
+    // =======================================================================
+    // UPDATE (called periodically by KzTimers via setInterval)
+    // =======================================================================
+
+    public function update(now:Number):Void
+    {
+        var i:Number = 0;
+        while (i < activeCount)
+        {
+            var inst:Object = activeTimers[i];
+            var elapsed:Number = now - inst.startTime;
+            if (elapsed >= inst.duration)
+            {
+                // Timer expired — remove by swapping with last
+                activeCount--;
+                if (i < activeCount)
+                {
+                    activeTimers[i] = activeTimers[activeCount];
+                }
+                activeTimers[activeCount] = null;
+                // Don't increment i — re-check swapped element
+                continue;
+            }
+            i++;
+        }
+    }
+
+    // =======================================================================
+    // DISPLAY STATE (read by KzTimers for rendering)
+    // =======================================================================
+
+    public function getActiveCount():Number
+    {
+        return activeCount;
+    }
+
+    public function getTimerState(index:Number, now:Number):Object
+    {
+        if (index < 0 || index >= activeCount) return null;
+
+        var inst:Object = activeTimers[index];
+        var cfg:Object = inst.cfg;
+        var elapsed:Number = now - inst.startTime;
+        var remaining:Number = inst.duration - elapsed;
+        if (remaining < 0) remaining = 0;
+
+        var progress:Number;
+        if (cfg.barDirection == "fill")
+        {
+            progress = elapsed / inst.duration;
+        }
+        else
+        {
+            progress = remaining / inst.duration;
+        }
+        if (progress > 1) progress = 1;
+        if (progress < 0) progress = 0;
+
+        var remainingSec:Number = remaining / 1000;
+        var displayMs:Number = (cfg.countDirection == "ascending") ? elapsed : remaining;
+        var state:Object = statePool[index];
+        state.label = cfg.name;
+        state.timeStr = formatTime(displayMs);
+        state.progress = progress;
+        state.color = (remainingSec <= cfg.warningThreshold) ? cfg.warningColor : cfg.barColor;
+        state.id = cfg.id;
+        return state;
+    }
+
+    public function hasAnyActivity():Boolean
+    {
+        return activeCount > 0;
+    }
+
+    // =======================================================================
+    // PRESET SUPPORT
+    // =======================================================================
+
+    public function getEnabledTimerIds():Array
+    {
+        var ids:Array = [];
+        var i:Number = 0;
+        while (i < allTimers.length)
+        {
+            if (allTimers[i].enabled)
+            {
+                ids.push(allTimers[i].id);
+            }
+            i++;
+        }
+        return ids;
+    }
+
+    public function setEnabledTimers(timerIds:Array):Void
+    {
+        // Disable all, then enable matching
+        var i:Number = 0;
+        while (i < allTimers.length)
+        {
+            allTimers[i].enabled = false;
+            i++;
+        }
+
+        i = 0;
+        while (i < allTimers.length)
+        {
+            var j:Number = 0;
+            while (j < timerIds.length)
+            {
+                if (allTimers[i].id == timerIds[j])
+                {
+                    allTimers[i].enabled = true;
+                    break;
+                }
+                j++;
+            }
+            i++;
+        }
+
+        // Rebuild trigger maps with new enabled set
+        buildTriggerMaps();
+
+        // Clear any active timers that are now disabled
+        var k:Number = 0;
+        while (k < activeCount)
+        {
+            if (!activeTimers[k].cfg.enabled)
+            {
+                activeCount--;
+                if (k < activeCount)
+                {
+                    activeTimers[k] = activeTimers[activeCount];
+                }
+                activeTimers[activeCount] = null;
+                continue;
+            }
+            k++;
+        }
+    }
+
+    public function clearAll():Void
+    {
+        activeCount = 0;
+        activeTimers = [];
+    }
+
+    public function restoreOriginalEnabled():Void
+    {
+        activeCount = 0;
+        activeTimers = [];
+        var i:Number = 0;
+        while (i < allTimers.length)
+        {
+            allTimers[i].enabled = originalEnabled[i];
+            i++;
+        }
+        // Clear trigger maps — no listening until a preset is clicked
+        buffAddMap = {};
+        buffRemMap = {};
+        castMap = {};
+    }
+
+    // =======================================================================
+    // INTERNAL HELPERS
+    // =======================================================================
+
+    private function normalizeSpell(s:String):String
+    {
+        if (s == null || s == "") return "";
+        s = s.toLowerCase();
+        var sp:Number = s.lastIndexOf(" ");
+        if (sp < 0) return s;
+        var last:String = s.substring(sp + 1);
+        // Check roman numerals (i-x)
+        if (last == "i" || last == "ii" || last == "iii" || last == "iv" ||
+            last == "v" || last == "vi" || last == "vii" || last == "viii" ||
+            last == "ix" || last == "x")
+        {
+            return s.substring(0, sp);
+        }
+        // Check arabic numbers (1-10)
+        var n:Number = parseInt(last);
+        if (!isNaN(n) && n >= 1 && n <= 10)
+        {
+            return s.substring(0, sp);
+        }
+        return s;
+    }
+
+    private function formatTime(milliseconds:Number):String
+    {
+        var totalSec:Number = Math.floor(milliseconds / 1000);
+
+        if (totalSec < 60)
+        {
+            if (SHOW_DECIMALS)
+            {
+                var tenths:Number = Math.floor((milliseconds % 1000) / 100);
+                return totalSec + "." + tenths;
+            }
+            return String(totalSec);
+        }
+
+        var mins:Number = Math.floor(totalSec / 60);
+        var secs:Number = totalSec % 60;
+        var secStr:String = secs < 10 ? "0" + secs : String(secs);
+        return mins + ":" + secStr;
+    }
+}

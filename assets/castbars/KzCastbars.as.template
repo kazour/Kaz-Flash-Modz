@@ -1,0 +1,873 @@
+import mx.utils.Delegate;
+import flash.geom.ColorTransform;
+import flash.geom.Transform;
+
+class KzCastbars
+{
+    // Compile-time config
+    private var PLAYER_COLOR:Number = 0x%%PLAYER_COLOR%%;
+    private var TARGET_COLOR:Number = 0x%%TARGET_COLOR%%;
+    private var PLAYER_X:Number = %%PLAYER_X%%;
+    private var PLAYER_Y:Number = %%PLAYER_Y%%;
+    private var TARGET_X:Number = %%TARGET_X%%;
+    private var TARGET_Y:Number = %%TARGET_Y%%;
+    private var ENABLE_PLAYER:Boolean = %%ENABLE_PLAYER%%;
+    private var ENABLE_TARGET:Boolean = %%ENABLE_TARGET%%;
+    private var SPELL_FONT:String = "%%SPELL_FONT%%";
+    private var SPELL_FONT_SIZE:Number = %%SPELL_FONT_SIZE%%;
+    private var SPELL_BOLD:Boolean = %%SPELL_BOLD%%;
+    private var SPELL_TEXT_COLOR:Number = 0x%%SPELL_COLOR%%;
+    private var SPELL_ALIGN:String = "%%SPELL_ALIGN%%";
+    private var TIMER_FONT:String = "%%TIMER_FONT%%";
+    private var TIMER_FONT_SIZE:Number = %%TIMER_FONT_SIZE%%;
+    private var TIMER_BOLD:Boolean = %%TIMER_BOLD%%;
+    private var TIMER_TEXT_COLOR:Number = 0x%%TIMER_COLOR%%;
+    private var SHOW_ESTIMATE:Boolean = %%SHOW_ESTIMATE%%;
+    private var SHOW_TIMER:Boolean = %%SHOW_TIMER%%;
+    private var SPELL_X:Number = %%SPELL_X%%;
+    private var SPELL_Y:Number = %%SPELL_Y%%;
+    private var TIMER_X:Number = %%TIMER_X%%;
+    private var TIMER_Y:Number = %%TIMER_Y%%;
+    private var BAR_LINKAGE:String = "%%BAR_LINKAGE%%";
+
+    // References
+    private var rootClip:MovieClip;
+    private var m_Player:Object;
+    private var m_Target:Object;
+    private var m_PlayerCastBar:MovieClip;
+    private var m_TargetCastBar:MovieClip;
+    private var config:Object;
+
+    // State
+    private var playerCasting:Boolean;
+    private var targetCasting:Boolean;
+    private var playerCastData:Object;
+    private var targetCastData:Object;
+    private var frameUpdateActive:Boolean;
+    private var previewMode:Boolean;
+    private var previewKeyArmed:Boolean;
+
+    // Preview helper (loosely coupled)
+    private var preview:KzCastbarsPreview;
+    private var playerBarObj:Object;
+    private var targetBarObj:Object;
+
+    // Constructor
+    public function KzCastbars(root:MovieClip)
+    {
+        rootClip = root;
+        playerCasting = false;
+        targetCasting = false;
+        frameUpdateActive = false;
+        previewMode = false;
+        previewKeyArmed = true;
+        playerCastData = {startTime:0, spell:"", initialProgress:0, estimatedTotal:0, lastEstimateTime:0, isMidCast:false};
+        targetCastData = {startTime:0, spell:"", initialProgress:0, estimatedTotal:0, lastEstimateTime:0, isMidCast:false};
+
+        // Initialize preview helper
+        preview = new KzCastbarsPreview(root);
+    }
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
+
+    public function OnModuleActivated(archive:Object):Object
+    {
+        config = archive;
+        if (config)
+        {
+            if (m_PlayerCastBar)
+            {
+                var spx:Object = config.FindEntry("px");
+                var spy:Object = config.FindEntry("py");
+                if (spx !== undefined && spy !== undefined)
+                {
+                    m_PlayerCastBar._x = Number(spx);
+                    m_PlayerCastBar._y = Number(spy);
+                }
+            }
+            if (m_TargetCastBar)
+            {
+                var stx:Object = config.FindEntry("tx");
+                var sty:Object = config.FindEntry("ty");
+                if (stx !== undefined && sty !== undefined)
+                {
+                    m_TargetCastBar._x = Number(stx);
+                    m_TargetCastBar._y = Number(sty);
+                }
+            }
+        }
+        return config;
+    }
+
+    public function onLoad():Void
+    {
+        Key.addListener(this);
+        createCastBars();
+
+        try
+        {
+            com.GameInterface.Game.CharacterBase.SignalClientCharacterAlive.Connect(SlotClientCharacterAlive, this);
+            m_Player = com.GameInterface.Game.Character.GetClientCharacter();
+            if (m_Player)
+            {
+                SlotClientCharacterAlive();
+            }
+        }
+        catch (e)
+        {
+        }
+    }
+
+    public function OnModuleDeactivated():Object
+    {
+        if (config)
+        {
+            if (m_PlayerCastBar)
+            {
+                config.ReplaceEntry("px", m_PlayerCastBar._x);
+                config.ReplaceEntry("py", m_PlayerCastBar._y);
+            }
+            if (m_TargetCastBar)
+            {
+                config.ReplaceEntry("tx", m_TargetCastBar._x);
+                config.ReplaceEntry("ty", m_TargetCastBar._y);
+            }
+        }
+        stopFrameUpdates();
+        Key.removeListener(this);
+        try
+        {
+            com.GameInterface.Game.CharacterBase.SignalClientCharacterAlive.Disconnect(SlotClientCharacterAlive, this);
+        }
+        catch (e) {}
+        if (m_Player)
+        {
+            disconnectPlayer(m_Player);
+            m_Player = null;
+        }
+        if (m_Target)
+        {
+            disconnectTarget(m_Target);
+            m_Target = null;
+        }
+        return config;
+    }
+
+    // =========================================================================
+    // Castbar Creation
+    // =========================================================================
+
+    private function createCastBars():Void
+    {
+        var depth:Number = 100;
+
+        if (ENABLE_PLAYER)
+        {
+            m_PlayerCastBar = rootClip.attachMovie(BAR_LINKAGE, "m_PlayerCastBar", depth);
+            depth++;
+            if (m_PlayerCastBar)
+            {
+                m_PlayerCastBar._x = PLAYER_X;
+                m_PlayerCastBar._y = PLAYER_Y;
+                initializeCastBar(m_PlayerCastBar, PLAYER_COLOR);
+            }
+        }
+
+        if (ENABLE_TARGET)
+        {
+            m_TargetCastBar = rootClip.attachMovie(BAR_LINKAGE, "m_TargetCastBar", depth);
+            depth++;
+            if (m_TargetCastBar)
+            {
+                m_TargetCastBar._x = TARGET_X;
+                m_TargetCastBar._y = TARGET_Y;
+                initializeCastBar(m_TargetCastBar, TARGET_COLOR);
+            }
+        }
+    }
+
+    private function initializeCastBar(cb:MovieClip, barColor:Number):Void
+    {
+        cb._visible = false;
+
+        // Mask setup
+        if (cb.color && cb.mask)
+        {
+            cb.color.setMask(cb.mask);
+        }
+        if (cb.mask)
+        {
+            cb.__maskBaseL = cb.mask._x;
+            cb.__maskBaseX = cb.mask._x + cb.mask._width;
+        }
+
+        // Apply color via ColorTransform (per-style mult + offset)
+        var cMult:Number = %%COLOR_MULT%%;
+        var cOffs:Number = %%COLOR_OFFS%%;
+        var rNorm:Number = ((barColor >> 16) & 0xFF) / 255;
+        var gNorm:Number = ((barColor >> 8) & 0xFF) / 255;
+        var bNorm:Number = (barColor & 0xFF) / 255;
+        var ct:ColorTransform = new ColorTransform();
+        ct.redMultiplier = rNorm * cMult;
+        ct.greenMultiplier = gNorm * cMult;
+        ct.blueMultiplier = bNorm * cMult;
+        ct.redOffset = rNorm * cOffs;
+        ct.greenOffset = gNorm * cOffs;
+        ct.blueOffset = bNorm * cOffs;
+        var t:Transform = new Transform(cb.color);
+        t.colorTransform = ct;
+
+        // Create text fields programmatically
+        var barW:Number = cb.frame._width;
+        var barH:Number = cb.frame._height;
+
+        var spX:Number = SPELL_X;
+        var tmX:Number = TIMER_X;
+
+        // Shadow text fields (behind main text, offset 1px)
+        cb.createTextField("m_SpellShadow", 98, 0, 0, barW, SPELL_FONT_SIZE + 8);
+        cb.createTextField("m_TimerShadow", 99, 0, 0, barW, TIMER_FONT_SIZE + 8);
+
+        var spShadowFmt:TextFormat = new TextFormat();
+        spShadowFmt.font = SPELL_FONT;
+        spShadowFmt.size = SPELL_FONT_SIZE;
+        spShadowFmt.color = 0x000000;
+        spShadowFmt.bold = SPELL_BOLD;
+
+        cb.m_SpellShadow.setNewTextFormat(spShadowFmt);
+        cb.m_SpellShadow.selectable = false;
+        cb.m_SpellShadow.embedFonts = false;
+
+        var tmShadowFmt:TextFormat = new TextFormat();
+        tmShadowFmt.font = TIMER_FONT;
+        tmShadowFmt.size = TIMER_FONT_SIZE;
+        tmShadowFmt.color = 0x000000;
+        tmShadowFmt.bold = TIMER_BOLD;
+
+        cb.m_TimerShadow.setNewTextFormat(tmShadowFmt);
+        cb.m_TimerShadow.selectable = false;
+        cb.m_TimerShadow.embedFonts = false;
+
+        // Main text fields (on top of shadows)
+        cb.createTextField("m_SpellName", 100, 0, 0, barW, SPELL_FONT_SIZE + 8);
+        cb.createTextField("m_Timer", 101, 0, 0, barW, TIMER_FONT_SIZE + 8);
+
+        var spFmt:TextFormat = new TextFormat();
+        spFmt.font = SPELL_FONT;
+        spFmt.size = SPELL_FONT_SIZE;
+        spFmt.color = SPELL_TEXT_COLOR;
+        spFmt.bold = SPELL_BOLD;
+
+        cb.m_SpellName.setNewTextFormat(spFmt);
+        cb.m_SpellName.selectable = false;
+        cb.m_SpellName.embedFonts = false;
+
+        var tmFmt:TextFormat = new TextFormat();
+        tmFmt.font = TIMER_FONT;
+        tmFmt.size = TIMER_FONT_SIZE;
+        tmFmt.color = TIMER_TEXT_COLOR;
+        tmFmt.bold = TIMER_BOLD;
+
+        cb.m_Timer.setNewTextFormat(tmFmt);
+        cb.m_Timer.selectable = false;
+        cb.m_Timer.embedFonts = false;
+
+        // Measure actual text height for font-metric centering
+        cb.m_SpellName.text = "Xg";
+        var spTH:Number = cb.m_SpellName.textHeight;
+        cb.m_SpellName.text = "";
+
+        cb.m_Timer.text = "0/0";
+        var tmTH:Number = cb.m_Timer.textHeight;
+        cb.m_Timer.text = "";
+
+        // Center: _y + 2px_gutter + textHeight/2 = barH/2
+        var spY:Number = (barH / 2) - (spTH / 2) - 2 + SPELL_Y;
+        var tmY:Number = (barH / 2) - (tmTH / 2) - 2 + TIMER_Y;
+
+        // Store bar width for centered text repositioning
+        cb.__barW = barW;
+
+        // Position spell name (left-aligned or centered)
+        if (SPELL_ALIGN == "center")
+        {
+            // Initial centered position (will be recalculated in updateDisplay)
+            cb.m_SpellName._x = barW / 2 + SPELL_X;
+            cb.m_SpellShadow._x = barW / 2 + SPELL_X + 1;
+        }
+        else
+        {
+            cb.m_SpellName._x = spX;
+            cb.m_SpellShadow._x = spX + 1;
+        }
+        cb.m_SpellName._y = spY;
+        cb.m_SpellShadow._y = spY + 1;
+        cb.m_Timer._x = tmX;
+        cb.m_Timer._y = tmY;
+        cb.m_TimerShadow._x = tmX + 1;
+        cb.m_TimerShadow._y = tmY + 1;
+
+        // Set autoSize after positioning to preserve right-edge anchor
+        cb.m_Timer.autoSize = "right";
+        cb.m_TimerShadow.autoSize = "right";
+
+        // Reset mask to 0%
+        if (cb.mask && cb.__maskBaseL != undefined)
+        {
+            var barWidth:Number = cb.color ? cb.color._width : cb.mask._width;
+            cb.mask._x = cb.__maskBaseL - barWidth;
+        }
+    }
+
+    // =========================================================================
+    // Cast Tracking
+    // =========================================================================
+
+    private function startCast(castData:Object, castBar:MovieClip, spellName:String, isPlayer:Boolean):Void
+    {
+        if (!castData || !castBar) return;
+
+        castData.startTime = getTimer();
+        castData.spell = spellName;
+        castData.initialProgress = 0;
+        castData.estimatedTotal = 0;
+        castData.lastEstimateTime = 0;
+        castData.isMidCast = false;
+
+        // Capture initial progress
+        if (isPlayer && m_Player)
+        {
+            castData.initialProgress = clamp01(m_Player.GetCommandProgress());
+        }
+        else if (!isPlayer && m_Target)
+        {
+            castData.initialProgress = clamp01(m_Target.GetCommandProgress());
+        }
+
+        castBar._visible = true;
+
+        if (castBar.m_SpellName)
+        {
+            castBar.m_SpellName.text = castData.spell;
+        }
+        if (castBar.m_SpellShadow)
+        {
+            castBar.m_SpellShadow.text = castData.spell;
+        }
+
+        // Reposition centered text based on actual text width
+        if (SPELL_ALIGN == "center" && castBar.__barW != undefined && castBar.m_SpellName)
+        {
+            var spCx:Number = (castBar.__barW / 2) - (castBar.m_SpellName.textWidth / 2) + SPELL_X;
+            castBar.m_SpellName._x = spCx;
+            if (castBar.m_SpellShadow) castBar.m_SpellShadow._x = spCx + 1;
+        }
+        if (SHOW_TIMER)
+        {
+            if (castBar.m_Timer)
+            {
+                castBar.m_Timer.text = "0.0";
+                castBar.m_Timer.textColor = TIMER_TEXT_COLOR;
+            }
+            if (castBar.m_TimerShadow)
+            {
+                castBar.m_TimerShadow.text = "0.0";
+            }
+        }
+
+        // Reset mask to 0%
+        if (castBar.mask && castBar.__maskBaseL != undefined)
+        {
+            var barWidth:Number = castBar.color ? castBar.color._width : castBar.mask._width;
+            castBar.mask._x = castBar.__maskBaseL - barWidth;
+        }
+
+        if (isPlayer)
+        {
+            playerCasting = true;
+        }
+        else
+        {
+            targetCasting = true;
+        }
+
+        startFrameUpdates();
+    }
+
+    private function endCast(castBar:MovieClip, isPlayer:Boolean):Void
+    {
+        // Always hide bar when cast ends (same behavior in and out of preview)
+        if (castBar)
+        {
+            castBar._visible = false;
+        }
+
+        if (isPlayer)
+        {
+            playerCasting = false;
+            playerCastData.startTime = 0;
+            playerCastData.spell = "";
+        }
+        else
+        {
+            targetCasting = false;
+            targetCastData.startTime = 0;
+            targetCastData.spell = "";
+        }
+
+        if (!playerCasting && !targetCasting && frameUpdateActive)
+        {
+            stopFrameUpdates();
+        }
+    }
+
+    // =========================================================================
+    // Frame Updates
+    // =========================================================================
+
+    private function startFrameUpdates():Void
+    {
+        if (!frameUpdateActive)
+        {
+            frameUpdateActive = true;
+            rootClip.onEnterFrame = mx.utils.Delegate.create(this, frameUpdate);
+        }
+    }
+
+    private function stopFrameUpdates():Void
+    {
+        if (frameUpdateActive)
+        {
+            frameUpdateActive = false;
+            rootClip.onEnterFrame = null;
+        }
+    }
+
+    private function frameUpdate():Void
+    {
+        if (!playerCasting && !targetCasting)
+        {
+            stopFrameUpdates();
+            return;
+        }
+
+        var now:Number = getTimer();
+        var progress:Number;
+
+        if (playerCasting && m_Player && m_PlayerCastBar)
+        {
+            progress = clamp01(m_Player.GetCommandProgress());
+            updateCastBar(playerCastData, m_PlayerCastBar, progress, now);
+        }
+
+        if (targetCasting && m_Target && m_TargetCastBar)
+        {
+            progress = clamp01(m_Target.GetCommandProgress());
+            updateCastBar(targetCastData, m_TargetCastBar, progress, now);
+        }
+    }
+
+    private function updateCastBar(castData:Object, castBar:MovieClip, engineProgress:Number, currentTime:Number):Void
+    {
+        if (!castBar || !castData) return;
+
+        engineProgress = clamp01(engineProgress);
+
+        // Move mask to match progress
+        if (castBar.mask && castBar.__maskBaseL != undefined)
+        {
+            var barWidth:Number = castBar.color ? castBar.color._width : castBar.mask._width;
+            castBar.mask._x = Math.round(castBar.__maskBaseL - barWidth + (engineProgress * barWidth));
+        }
+
+        // Calculate elapsed time
+        var elapsedMs:Number = Math.max(0, currentTime - castData.startTime);
+        var elapsedSec:Number = elapsedMs / 1000;
+        var displayStr:String;
+
+        // Estimation logic (from Castbar 1, adapted to 0-1 range)
+        if (SHOW_ESTIMATE && !castData.isMidCast)
+        {
+            // Throttle estimation to every ~100ms
+            if (currentTime - castData.lastEstimateTime > 100)
+            {
+                castData.lastEstimateTime = currentTime;
+                var progressDelta:Number = engineProgress - castData.initialProgress;
+
+                // Only estimate when we have enough data and below 80%
+                if (engineProgress < 0.8 && progressDelta > 0.01)
+                {
+                    castData.estimatedTotal = Math.round(2 * elapsedMs / progressDelta / 1000) / 2;
+                }
+            }
+
+            // Cap elapsed at estimate
+            if (castData.estimatedTotal > 0 && elapsedSec > castData.estimatedTotal)
+            {
+                elapsedSec = castData.estimatedTotal;
+            }
+
+            // Format display
+            var dispElapsed:Number = Math.round(elapsedSec * 10) / 10;
+            displayStr = formatTime(dispElapsed);
+
+            if (castData.estimatedTotal > 0)
+            {
+                displayStr = displayStr + "/" + formatTime(castData.estimatedTotal);
+            }
+        }
+        else
+        {
+            // Simple elapsed display
+            if (castData.isMidCast)
+            {
+                // Mid-cast: show progress bar only, no timer
+                if (castBar.m_Timer)
+                {
+                    castBar.m_Timer.text = "";
+                }
+                if (castBar.m_TimerShadow)
+                {
+                    castBar.m_TimerShadow.text = "";
+                }
+                return;
+            }
+
+            var dispSec:Number = Math.round(elapsedSec * 10) / 10;
+            displayStr = formatTime(dispSec);
+        }
+
+        if (SHOW_TIMER)
+        {
+            if (castBar.m_Timer)
+            {
+                castBar.m_Timer.text = displayStr;
+            }
+            if (castBar.m_TimerShadow)
+            {
+                castBar.m_TimerShadow.text = displayStr;
+            }
+        }
+    }
+
+    private function formatTime(seconds:Number):String
+    {
+        var s:String = String(seconds);
+        if (s.indexOf(".") == -1)
+        {
+            s = s + ".0";
+        }
+        return s;
+    }
+
+    // =========================================================================
+    // Signal Handlers
+    // =========================================================================
+
+    private function SlotClientCharacterAlive():Void
+    {
+        try
+        {
+            if (m_Player)
+            {
+                disconnectPlayer(m_Player);
+            }
+            m_Player = com.GameInterface.Game.Character.GetClientCharacter();
+            if (m_Player)
+            {
+                connectPlayer(m_Player);
+                var target:Object = m_Player.GetOffensiveTarget();
+                if (target && target.GetType() != _global.Enums.TypeID.e_Type_None)
+                {
+                    SlotOffensiveTargetChanged(target);
+                }
+            }
+        }
+        catch (e)
+        {
+            setTimeout(mx.utils.Delegate.create(this, SlotClientCharacterAlive), 1000);
+        }
+    }
+
+    private function SlotOffensiveTargetChanged(targetId:Object):Void
+    {
+        if (!targetId || targetId.GetType() == _global.Enums.TypeID.e_Type_None)
+        {
+            SetTarget(null);
+        }
+        else
+        {
+            SetTarget(com.GameInterface.Game.Character.GetCharacter(targetId));
+        }
+    }
+
+    private function SlotPlayerCastStarted(spellName:String):Void
+    {
+        if (m_Player && m_PlayerCastBar)
+        {
+            startCast(playerCastData, m_PlayerCastBar, spellName, true);
+        }
+    }
+
+    private function SlotPlayerCastEnded():Void
+    {
+        endCast(m_PlayerCastBar, true);
+    }
+
+    private function SlotTargetCastStarted(spellName:String):Void
+    {
+        if (m_Target && m_TargetCastBar)
+        {
+            startCast(targetCastData, m_TargetCastBar, spellName, false);
+        }
+    }
+
+    private function SlotTargetCastEnded():Void
+    {
+        endCast(m_TargetCastBar, false);
+    }
+
+    // =========================================================================
+    // Target Management
+    // =========================================================================
+
+    private function SetTarget(character:Object):Void
+    {
+        try
+        {
+            if (m_Target)
+            {
+                disconnectTarget(m_Target);
+            }
+            targetCasting = false;
+            if (m_TargetCastBar && !previewMode)
+            {
+                m_TargetCastBar._visible = false;
+            }
+            targetCastData.startTime = 0;
+            targetCastData.spell = "";
+            m_Target = character;
+            if (m_Target)
+            {
+                connectTarget(m_Target);
+                setTimeout(mx.utils.Delegate.create(this, checkTargetCastState), 100);
+            }
+        }
+        catch (e)
+        {
+        }
+    }
+
+    private function checkTargetCastState():Void
+    {
+        if (m_Target)
+        {
+            var progress:Number = m_Target.GetCommandProgress();
+            if (progress > 0 && progress < 1 && !targetCasting)
+            {
+                // Mid-cast detected
+                targetCastData.isMidCast = true;
+                targetCastData.initialProgress = clamp01(progress);
+                startCast(targetCastData, m_TargetCastBar, "", false);
+                targetCastData.isMidCast = true;  // Re-set after startCast resets it
+            }
+        }
+    }
+
+    // =========================================================================
+    // Signal Wiring
+    // =========================================================================
+
+    private function connectPlayer(character:Object):Void
+    {
+        if (!character) return;
+        try
+        {
+            character.SignalCommandStarted.Connect(SlotPlayerCastStarted, this);
+            character.SignalCommandEnded.Connect(SlotPlayerCastEnded, this);
+            character.SignalCommandAborted.Connect(SlotPlayerCastEnded, this);
+            character.SignalOffensiveTargetChanged.Connect(SlotOffensiveTargetChanged, this);
+            if (character.ConnectToCommandQueue)
+            {
+                character.ConnectToCommandQueue();
+            }
+        }
+        catch (e)
+        {
+        }
+    }
+
+    private function disconnectPlayer(character:Object):Void
+    {
+        if (!character) return;
+        try
+        {
+            character.SignalCommandStarted.Disconnect(SlotPlayerCastStarted, this);
+            character.SignalCommandEnded.Disconnect(SlotPlayerCastEnded, this);
+            character.SignalCommandAborted.Disconnect(SlotPlayerCastEnded, this);
+            character.SignalOffensiveTargetChanged.Disconnect(SlotOffensiveTargetChanged, this);
+        }
+        catch (e)
+        {
+        }
+    }
+
+    private function connectTarget(character:Object):Void
+    {
+        if (!character) return;
+        try
+        {
+            character.SignalCommandStarted.Connect(SlotTargetCastStarted, this);
+            character.SignalCommandEnded.Connect(SlotTargetCastEnded, this);
+            character.SignalCommandAborted.Connect(SlotTargetCastEnded, this);
+            if (character.ConnectToCommandQueue)
+            {
+                character.ConnectToCommandQueue();
+            }
+        }
+        catch (e)
+        {
+        }
+    }
+
+    private function disconnectTarget(character:Object):Void
+    {
+        if (!character) return;
+        try
+        {
+            character.SignalCommandStarted.Disconnect(SlotTargetCastStarted, this);
+            character.SignalCommandEnded.Disconnect(SlotTargetCastEnded, this);
+            character.SignalCommandAborted.Disconnect(SlotTargetCastEnded, this);
+        }
+        catch (e)
+        {
+        }
+    }
+
+    // =========================================================================
+    // Preview Mode
+    // =========================================================================
+
+    private function onKeyDown():Void
+    {
+        if (Key.isDown(16) && Key.isDown(17) && Key.isDown(18))
+        {
+            if (previewKeyArmed)
+            {
+                previewKeyArmed = false;
+                if (!previewMode) enterPreview();
+                else exitPreview();
+            }
+        }
+    }
+
+    private function onKeyUp():Void
+    {
+        if (!(Key.isDown(16) && Key.isDown(17) && Key.isDown(18)))
+        {
+            previewKeyArmed = true;
+        }
+    }
+
+    private function enterPreview():Void
+    {
+        if (previewMode) return;
+        previewMode = true;
+
+        var barWidth:Number;
+
+        if (m_PlayerCastBar)
+        {
+            m_PlayerCastBar._visible = true;
+            // Clear any leftover text from previous casts
+            if (m_PlayerCastBar.m_SpellName) m_PlayerCastBar.m_SpellName.text = "";
+            if (m_PlayerCastBar.m_SpellShadow) m_PlayerCastBar.m_SpellShadow.text = "";
+            if (m_PlayerCastBar.m_Timer) m_PlayerCastBar.m_Timer.text = "";
+            if (m_PlayerCastBar.m_TimerShadow) m_PlayerCastBar.m_TimerShadow.text = "";
+            if (m_PlayerCastBar.mask && m_PlayerCastBar.__maskBaseL != undefined)
+            {
+                barWidth = m_PlayerCastBar.color ? m_PlayerCastBar.color._width : m_PlayerCastBar.mask._width;
+                m_PlayerCastBar.mask._x = m_PlayerCastBar.__maskBaseL - barWidth * 0.5;
+            }
+            // Create loosely coupled bar object for preview helper
+            playerBarObj = {
+                mc: m_PlayerCastBar,
+                label: "Player",
+                overlayColor: 0x0066FF,
+                width: m_PlayerCastBar.frame._width,
+                height: m_PlayerCastBar.frame._height
+            };
+            preview.createOverlay(playerBarObj);
+        }
+
+        if (m_TargetCastBar)
+        {
+            m_TargetCastBar._visible = true;
+            // Clear any leftover text from previous casts
+            if (m_TargetCastBar.m_SpellName) m_TargetCastBar.m_SpellName.text = "";
+            if (m_TargetCastBar.m_SpellShadow) m_TargetCastBar.m_SpellShadow.text = "";
+            if (m_TargetCastBar.m_Timer) m_TargetCastBar.m_Timer.text = "";
+            if (m_TargetCastBar.m_TimerShadow) m_TargetCastBar.m_TimerShadow.text = "";
+            if (m_TargetCastBar.mask && m_TargetCastBar.__maskBaseL != undefined)
+            {
+                barWidth = m_TargetCastBar.color ? m_TargetCastBar.color._width : m_TargetCastBar.mask._width;
+                m_TargetCastBar.mask._x = m_TargetCastBar.__maskBaseL - barWidth * 0.4;
+            }
+            // Create loosely coupled bar object for preview helper
+            targetBarObj = {
+                mc: m_TargetCastBar,
+                label: "Target",
+                overlayColor: 0xFF0066,
+                width: m_TargetCastBar.frame._width,
+                height: m_TargetCastBar.frame._height
+            };
+            preview.createOverlay(targetBarObj);
+        }
+    }
+
+    private function exitPreview():Void
+    {
+        if (!previewMode) return;
+        previewMode = false;
+
+        if (playerBarObj)
+        {
+            preview.removeOverlay(playerBarObj);
+            playerBarObj = null;
+            if (!playerCasting) m_PlayerCastBar._visible = false;
+        }
+        if (targetBarObj)
+        {
+            preview.removeOverlay(targetBarObj);
+            targetBarObj = null;
+            if (!targetCasting) m_TargetCastBar._visible = false;
+        }
+        if (config)
+        {
+            if (m_PlayerCastBar)
+            {
+                config.ReplaceEntry("px", m_PlayerCastBar._x);
+                config.ReplaceEntry("py", m_PlayerCastBar._y);
+            }
+            if (m_TargetCastBar)
+            {
+                config.ReplaceEntry("tx", m_TargetCastBar._x);
+                config.ReplaceEntry("ty", m_TargetCastBar._y);
+            }
+        }
+    }
+
+    // =========================================================================
+    // Utility
+    // =========================================================================
+
+    private function clamp01(value:Number):Number
+    {
+        if (isNaN(value)) return 0;
+        if (value < 0) return 0;
+        if (value > 1) return 1;
+        return value;
+    }
+}
