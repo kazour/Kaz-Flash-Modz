@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from .ui_helpers import (
-    THEME_COLORS, FONT_SMALL,
+    THEME_COLORS, FONT_SMALL, FONT_SECTION, FONT_SMALL_BOLD,
     create_tip_bar, create_profile_info_bar, BTN_MEDIUM,
     ColorSwatch, create_scrollable_frame,
 )
@@ -297,26 +297,26 @@ class DamageInfoTab(ttk.Frame):
         header.pack(fill='x', pady=(0, 2))
 
         ttk.Label(header, text="Type", width=18, anchor='w',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Color", width=14, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Size", width=9, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Font", width=11, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Speed", width=6, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Duration", width=8, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
         ttk.Label(header, text="Dir", width=5, anchor='center',
-                  font=('Arial', 9, 'bold')).pack(side='left')
+                  font=FONT_SECTION).pack(side='left')
 
         # Master controls row (full width)
         master_row = ttk.Frame(parent)
         master_row.pack(fill='x', pady=(0, 5))
 
         ttk.Label(master_row, text="Set All:", width=18, anchor='w',
-                  font=('Arial', 8), foreground=THEME_COLORS['body']).pack(side='left')
+                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(side='left')
         # Color spacer
         ttk.Frame(master_row, width=112).pack(side='left')
 
@@ -367,7 +367,7 @@ class DamageInfoTab(ttk.Frame):
     def _create_category_section(self, parent, category: str, type_names: list):
         """Create a section for a category of damage types."""
         # Category label
-        cat_label = ttk.Label(parent, text=category, font=('Arial', 9, 'bold'),
+        cat_label = ttk.Label(parent, text=category, font=FONT_SECTION,
                               foreground=THEME_COLORS['heading'])
         cat_label.pack(anchor='w', pady=(8, 2))
 
@@ -454,20 +454,20 @@ class DamageInfoTab(ttk.Frame):
 
         # Field descriptions
         ttk.Label(help_frame, text="Field Guide",
-                  font=('Segoe UI', 9, 'bold'), foreground=THEME_COLORS['heading']).pack(anchor='w')
+                  font=FONT_SECTION, foreground=THEME_COLORS['heading']).pack(anchor='w')
 
         ttk.Label(help_frame, text="Speed",
-                  font=('Segoe UI', 8, 'bold'), foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(4, 0))
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(4, 0))
         ttk.Label(help_frame, text="How fast the number moves\nHigher = faster movement",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
 
         ttk.Label(help_frame, text="Duration",
-                  font=('Segoe UI', 8, 'bold'), foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
         ttk.Label(help_frame, text="How long number stays visible\nValue in seconds (e.g. 2.0s)",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
 
         ttk.Label(help_frame, text="Dir (Direction)",
-                  font=('Segoe UI', 8, 'bold'), foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
         ttk.Label(help_frame, text="-1 = Float down from top",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
         ttk.Label(help_frame, text="      \u2192 Column B (if enabled)",
@@ -484,7 +484,7 @@ class DamageInfoTab(ttk.Frame):
 
         # Quick Setup
         ttk.Label(help_frame, text="Quick Setup",
-                  font=('Segoe UI', 9, 'bold'), foreground=THEME_COLORS['heading']).pack(anchor='w')
+                  font=FONT_SECTION, foreground=THEME_COLORS['heading']).pack(anchor='w')
         ttk.Label(help_frame, text="Separate self/heals/resources\nfrom incoming damage:",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', pady=(4, 0))
 

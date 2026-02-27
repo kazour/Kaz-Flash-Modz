@@ -16,7 +16,7 @@ v2 Format:
 import tkinter as tk
 from tkinter import ttk, filedialog
 from ttkbootstrap.dialogs import Messagebox
-from .ui_helpers import THEME_COLORS, style_tk_text, apply_dark_titlebar, BTN_SMALL, BTN_MEDIUM, add_tooltip
+from .ui_helpers import THEME_COLORS, FONT_SMALL, style_tk_text, apply_dark_titlebar, BTN_SMALL, BTN_MEDIUM, add_tooltip
 import json
 import re
 
@@ -230,7 +230,7 @@ class BuffEditDialog(tk.Toplevel):
             self.ids_text.insert('1.0', '\n'.join(str(i) for i in ids))
 
         ttk.Label(id_frame, text="One per line or\ncomma-separated",
-                 foreground=THEME_COLORS['muted'], font=('Arial', 8)).pack(side='left', padx=10)
+                 foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left', padx=10)
 
         # Category
         ttk.Label(frame, text="Category:").grid(row=2, column=0, sticky='w', pady=5)
@@ -258,7 +258,7 @@ class BuffEditDialog(tk.Toplevel):
                        command=self._on_stacking_changed,
                        bootstyle="success-round-toggle").pack(side='left')
         ttk.Label(stack_frame, text="(IDs ordered by stack)",
-                 foreground=THEME_COLORS['muted'], font=('Arial', 8)).pack(side='left', padx=10)
+                 foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left', padx=10)
 
         # Stack Start field (only shown when stacking is checked)
         ttk.Label(frame, text="Start at:").grid(row=5, column=0, sticky='w', pady=5)
@@ -272,7 +272,7 @@ class BuffEditDialog(tk.Toplevel):
         )
         self.stack_start_spin.pack(side='left')
         ttk.Label(self.stack_start_frame, text="First ID = this stack number",
-                 foreground=THEME_COLORS['muted'], font=('Arial', 8)).pack(side='left', padx=10)
+                 foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left', padx=10)
 
         # Stack End field
         ttk.Label(frame, text="End at:").grid(row=6, column=0, sticky='w', pady=5)
@@ -288,7 +288,7 @@ class BuffEditDialog(tk.Toplevel):
         )
         self.stack_end_spin.pack(side='left')
         ttk.Label(self.stack_end_frame, text="Last stack to show (0 = all)",
-                 foreground=THEME_COLORS['muted'], font=('Arial', 8)).pack(side='left', padx=10)
+                 foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left', padx=10)
 
         # Initial state based on stacking checkbox
         self._on_stacking_changed()

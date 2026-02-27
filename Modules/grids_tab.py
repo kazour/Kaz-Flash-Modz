@@ -15,7 +15,7 @@ from Modules.build_utils import update_script_with_marker
 from Modules.ui_helpers import (
     restore_window_position, bind_window_position_save,
     get_setting, set_setting,
-    FONT_SECTION, FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
+    FONT_SUBTITLE, FONT_SECTION, FONT_BODY, FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
     THEME_COLORS, style_tk_listbox, apply_dark_titlebar,
     PAD_ROW, BTN_SMALL, BTN_MEDIUM, GRID_TYPE_COLORS,
     create_tip_bar, create_profile_info_bar,
@@ -113,7 +113,7 @@ class AddGridWizard(tk.Toplevel):
         frame.pack(fill='both', expand=True)
 
         # Header
-        ttk.Label(frame, text="Create New Grid", font=('Arial', 12, 'bold')).pack(pady=(0, 5))
+        ttk.Label(frame, text="Create New Grid", font=FONT_SUBTITLE).pack(pady=(0, 5))
         self.avail_label = ttk.Label(frame, text=f"Available slots: {self.available_slots} of {MAX_TOTAL_SLOTS}",
                                      foreground=THEME_COLORS['info_value'])
         self.avail_label.pack(pady=(0, 8))
@@ -189,7 +189,7 @@ class AddGridWizard(tk.Toplevel):
                  foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(anchor='w', pady=(3, 0))
 
         # Quick Templates (integrated into Dimensions section)
-        ttk.Label(dim_frame, text="Quick Templates:", foreground=THEME_COLORS['muted'], font=('Arial', 9)).pack(pady=(8, 2))
+        ttk.Label(dim_frame, text="Quick Templates:", foreground=THEME_COLORS['muted'], font=FONT_BODY).pack(pady=(8, 2))
         template_frame = ttk.Frame(dim_frame)
         template_frame.pack()
 
@@ -536,7 +536,7 @@ class SlotAssignmentDialog(tk.Toplevel):
 
     def create_widgets(self):
         info = f"Grid: {self.grid_config['rows']}x{self.grid_config['cols']} = {self.total_slots} slots"
-        ttk.Label(self, text=info, padding=5, font=('Arial', 9)).pack(fill='x')
+        ttk.Label(self, text=info, padding=5, font=FONT_BODY).pack(fill='x')
 
         container = ttk.Frame(self)
         container.pack(fill='both', expand=True, padx=5, pady=2)

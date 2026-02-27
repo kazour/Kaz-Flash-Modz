@@ -10,7 +10,7 @@ from tkinter import ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from .ui_helpers import (
-    THEME_COLORS, FONT_SMALL,
+    THEME_COLORS, FONT_SUBTITLE, FONT_SMALL,
     apply_dark_titlebar, restore_window_position, bind_window_position_save,
     add_tooltip, ColorSwatch,
 )
@@ -86,7 +86,7 @@ class TimerEditorDialog(tk.Toplevel):
 
         # Header
         title_text = "Edit Timer" if self._edit_mode else "Create New Timer"
-        ttk.Label(frame, text=title_text, font=('Arial', 12, 'bold')).pack(pady=(0, 8))
+        ttk.Label(frame, text=title_text, font=FONT_SUBTITLE).pack(pady=(0, 8))
 
         # Timer Name
         name_frame = ttk.Frame(frame)

@@ -12,6 +12,7 @@ from tkinter import ttk
 # ============================================================================
 FONT_TITLE = ('Segoe UI', 20, 'bold')
 FONT_HEADING = ('Segoe UI', 14, 'bold')
+FONT_SUBTITLE = ('Segoe UI', 12, 'bold')
 FONT_SECTION = ('Segoe UI', 9, 'bold')
 FONT_BODY = ('Segoe UI', 9)
 FONT_FORM_LABEL = ('Segoe UI', 9)        # Form field labels (upgrade from 8pt FONT_SMALL)
