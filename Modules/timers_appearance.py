@@ -1,5 +1,5 @@
 """
-Timers Appearance Settings Module for KzBuilder 3.3.5
+Timers Appearance Settings Module for KzBuilder 3.3.6
 Defines defaults, validation, and I/O for KzTimers visual customization.
 """
 

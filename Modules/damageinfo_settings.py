@@ -1,5 +1,5 @@
 """
-DamageInfo Settings Module for KzBuilder 3.3.5
+DamageInfo Settings Module for KzBuilder 3.3.6
 Defines all AS2 global settings as OFFSETS from game defaults.
 
 All values are offsets: 0 = no change from original game behavior.

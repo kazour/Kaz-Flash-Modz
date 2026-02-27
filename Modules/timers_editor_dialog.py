@@ -1,5 +1,5 @@
 """
-Timer Editor Dialog for KzBuilder 3.3.5
+Timer Editor Dialog for KzBuilder 3.3.6
 
 Modal dialog for adding/editing a single cooldown timer.
 Follows the AddGridWizard pattern: withdraw → build → restore position → deiconify.

@@ -1,5 +1,5 @@
 """
-Kaz Flash Modz v3.3.5
+Kaz Flash Modz v3.3.6
 Multi-module SWF mod builder for Age of Conan.
 Builds KzGrids, KzCastbars, KzTimers, KzStopwatch, and DamageInfo.
 """
@@ -53,7 +53,7 @@ from Modules.ui_helpers import (
 )
 
 APP_NAME = "Kaz Flash Modz"
-APP_VERSION = "3.3.5"
+APP_VERSION = "3.3.6"
 SETTINGS_FILE = "kzbuilder_settings.json"
 PROFILES_DIR = "profiles"
 

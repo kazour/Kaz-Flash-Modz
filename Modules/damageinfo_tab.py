@@ -1,5 +1,5 @@
 """
-DamageNumber Tab UI for KzBuilder 3.3.5
+DamageNumber Tab UI for KzBuilder 3.3.6
 Provides GUI for customizing DamageInfo.swf settings (global AS2 + per-type XML).
 """
 

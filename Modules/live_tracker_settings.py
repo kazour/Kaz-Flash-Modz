@@ -1,5 +1,5 @@
 """
-Timers Settings Module for KzBuilder 3.3.5
+Timers Settings Module for KzBuilder 3.3.6
 Defines Live Tracker overlay settings, defaults, and validation.
 """
 

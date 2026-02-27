@@ -121,7 +121,7 @@ function createCB(obj, si):Function {
 
 ```json
 {
-    "version": "3.3.5",
+    "version": "3.3.6",
     "grids": [/* grid config objects */],
     "castbars": {/* castbar settings */},
     "damageinfo": {/* damage number settings */},

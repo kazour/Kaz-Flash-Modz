@@ -1,5 +1,5 @@
 """
-Combat Log Monitor Module for KzBuilder 3.3.5
+Combat Log Monitor Module for KzBuilder 3.3.6
 Daemon thread that monitors Age of Conan combat logs for boss mechanics.
 """
 

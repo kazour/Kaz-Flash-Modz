@@ -1,5 +1,5 @@
 """
-Stopwatch Settings Module for KzBuilder 3.3.5
+Stopwatch Settings Module for KzBuilder 3.3.6
 Defines defaults, validation, and I/O for the standalone stopwatch SWF.
 """
 

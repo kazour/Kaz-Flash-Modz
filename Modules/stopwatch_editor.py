@@ -1,5 +1,5 @@
 """
-Stopwatch Editor UI Module for KzBuilder 3.3.5
+Stopwatch Editor UI Module for KzBuilder 3.3.6
 
 Two-column editor for stopwatch presets and appearance.
 Column 0: Preview canvas + appearance settings (scrollable).

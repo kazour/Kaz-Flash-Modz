@@ -1,5 +1,5 @@
 """
-Castbar Tab UI for KzBuilder 3.3.5
+Castbar Tab UI for KzBuilder 3.3.6
 Provides GUI for configuring KzCastbars.swf settings with live preview.
 """
 

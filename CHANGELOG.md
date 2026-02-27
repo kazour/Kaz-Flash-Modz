@@ -4,6 +4,17 @@ All notable changes to Kaz Flash Modz will be documented in this file.
 
 ---
 
+## v3.3.6 — Pristine Cleanup
+
+### Changed
+- Added `FONT_SUBTITLE` constant and replaced all hardcoded font tuples with `FONT_*` constants across 5 UI files (19 replacements)
+- Migrated all `print()` statements to `logging` module across 6 files (13 total)
+- Narrowed overly-broad `except Exception: pass` blocks in `castbar_tab.py` and `timer_overlay.py`
+- Added docstrings to all public methods in `grids_tab.py`, `kzbuilder.py`, `ui_helpers.py`, `grids_generator.py`, `timers_data.py` (85 total)
+- Removed completed `theme-migration-plan.md` from docs
+
+---
+
 ## v3.3.5 — Code Quality Cleanup
 
 ### Changed

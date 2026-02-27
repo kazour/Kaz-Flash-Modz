@@ -1,5 +1,5 @@
 """
-Cooldown Timer Generator for KzBuilder 3.3.5
+Cooldown Timer Generator for KzBuilder 3.3.6
 
 Generates KzTimers.as + TimerManager.as from CooldownSettings, compiles with MTASC.
 Two-class architecture: KzTimers (shell/UI/signals) + TimerManager (timer engine).

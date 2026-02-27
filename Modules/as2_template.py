@@ -1,5 +1,5 @@
 """
-AS2 Core Methods Template for KzBuilder v3.3.5 - OPTIMIZED
+AS2 Core Methods Template for KzBuilder v3.3.6 - OPTIMIZED
 This file contains the ActionScript 2.0 runtime code that gets compiled into the SWF.
 
 OPTIMIZATIONS APPLIED:

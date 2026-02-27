@@ -1,5 +1,5 @@
 """
-Stopwatch Tab UI for KzBuilder 3.3.5
+Stopwatch Tab UI for KzBuilder 3.3.6
 Standalone KzStopwatch — thin shell with embedded StopwatchEditorPanel.
 Follows TimersTab pattern: tab handles CRUD dialogs, editor owns layout.
 """

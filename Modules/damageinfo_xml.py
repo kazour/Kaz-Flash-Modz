@@ -1,5 +1,5 @@
 """
-DamageInfo XML Module for KzBuilder 3.3.5
+DamageInfo XML Module for KzBuilder 3.3.6
 Handles parsing and generation of TextColors.xml for per-type damage number customization.
 """
 

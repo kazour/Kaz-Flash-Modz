@@ -1,5 +1,5 @@
 """
-Stopwatch Phase Editor Dialog for KzBuilder 3.3.5
+Stopwatch Phase Editor Dialog for KzBuilder 3.3.6
 
 Modal dialog for adding/editing a single stopwatch phase.
 Follows the TimerEditorDialog pattern: withdraw → build → restore position → deiconify.

@@ -1,5 +1,5 @@
 """
-Stopwatch Preset Data Models — KzBuilder 3.3.5
+Stopwatch Preset Data Models — KzBuilder 3.3.6
 
 Dataclasses for stopwatch presets: phase-based sequences with configurable
 end behavior and count direction. Each preset defines a multi-phase timer

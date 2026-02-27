@@ -1,5 +1,5 @@
 """
-Cooldown Editor UI Module for KzBuilder 3.3.5
+Cooldown Editor UI Module for KzBuilder 3.3.6
 
 Visual editor for configuring cooldown tracking timers.
 Two-column layout: Preview + Appearance | Presets + Timer List.

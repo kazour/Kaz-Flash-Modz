@@ -20,7 +20,7 @@ MAX_TOTAL_SLOTS = 64
 class CodeGenerator:
     """Generate AS2 source code for the KzGrids buff-tracking grid system."""
 
-    def __init__(self, grids, database, app_version="3.3.5"):
+    def __init__(self, grids, database, app_version="3.3.6"):
         """Initialize the code generator with grid configs and the buff database."""
         # Filter out disabled grids
         self.grids = [g for g in grids if g.get('enabled', True)]
