@@ -347,7 +347,7 @@ class TimerOverlay:
                     widget.config(bg=inner_color)
                 elif widget_type == 'border':
                     widget.config(bg=border_color)
-            except Exception:
+            except (tk.TclError, AttributeError):
                 pass
 
         try:
@@ -361,7 +361,7 @@ class TimerOverlay:
                     highlightbackground=border_color,
                     highlightthickness=1
                 )
-        except Exception:
+        except (tk.TclError, AttributeError):
             pass
 
     def set_opacity(self, value):
@@ -401,7 +401,7 @@ class TimerOverlay:
         """Destroy the overlay window."""
         try:
             self.root.destroy()
-        except Exception:
+        except (tk.TclError, AttributeError):
             pass
 
     def apply_settings(self, settings):

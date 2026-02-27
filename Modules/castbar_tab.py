@@ -3,10 +3,13 @@ Castbar Tab UI for KzBuilder 3.3.5
 Provides GUI for configuring KzCastbars.swf settings with live preview.
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk, filedialog
 import json
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from ttkbootstrap.dialogs import Messagebox
 
@@ -364,8 +367,8 @@ class CastbarTab(ttk.Frame):
 
         except ImportError:
             pass
-        except Exception:
-            pass
+        except (OSError, ValueError) as e:
+            logger.warning("Could not load castbar color previews: %s", e)
 
     def _tint_color_pil(self, style, hex_color, clip_width=None):
         """Apply per-channel ColorTransform tint (matches Flash exactly). Returns PIL Image."""
