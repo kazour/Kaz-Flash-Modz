@@ -4,6 +4,7 @@ Multi-module SWF mod builder for Age of Conan.
 Builds KzGrids, KzCastbars, KzTimers, KzStopwatch, and DamageInfo.
 """
 
+import logging
 import ttkbootstrap as ttb
 import tkinter as tk
 from tkinter import ttk, filedialog
@@ -13,6 +14,12 @@ import sys
 import shutil
 import tempfile
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Import database editor module
 from Modules.database_editor import BuffDatabase, DatabaseEditorTab
@@ -65,7 +72,7 @@ class SettingsManager:
                 with open(self.filepath, 'r', encoding='utf-8') as f:
                     self.data = json.load(f)
             except (json.JSONDecodeError, IOError, OSError) as e:
-                print(f"Warning: Could not load settings from {self.filepath}: {e}")
+                logger.warning("Could not load settings from %s: %s", self.filepath, e)
                 self.data = {}
 
     def save(self):
@@ -74,7 +81,7 @@ class SettingsManager:
             with open(self.filepath, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2)
         except Exception as e:
-            print(f"Error saving settings: {e}")
+            logger.error("Error saving settings to %s: %s", self.filepath, e)
 
     def get(self, key, default=None):
         return self.data.get(key, default)

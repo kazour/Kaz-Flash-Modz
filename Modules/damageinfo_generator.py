@@ -3,11 +3,14 @@ DamageInfo Generator for KzBuilder 3.3.5
 Handles AS2 code modification and MTASC compilation for DamageInfo.swf.
 """
 
+import logging
 import re
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 from Modules.build_utils import compile_as2
 
@@ -57,7 +60,7 @@ class DamageInfoGenerator:
             for file_path, replacements in self._modifications.items():
                 full_path = output_path / file_path
                 if not full_path.exists():
-                    print(f"Warning: File not found: {full_path}")
+                    logger.warning("File not found: %s", full_path)
                     continue
 
                 self._apply_replacements(full_path, replacements)
@@ -65,7 +68,7 @@ class DamageInfoGenerator:
             return True
 
         except Exception as e:
-            print(f"Error generating DamageInfo code: {e}")
+            logger.error("Error generating DamageInfo code: %s", e)
             return False
 
     def _build_modifications(self):
@@ -130,7 +133,7 @@ class DamageInfoGenerator:
                 content = new_content
                 modified = True
             else:
-                print(f"Warning: Pattern did not match in {file_path.name}: {pattern[:60]}...")
+                logger.warning("Pattern did not match in %s: %s...", file_path.name, pattern[:60])
 
         if modified:
             with open(file_path, 'w', encoding='utf-8') as f:

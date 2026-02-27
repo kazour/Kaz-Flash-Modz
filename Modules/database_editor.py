@@ -13,12 +13,15 @@ v2 Format:
 }
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk, filedialog
 from ttkbootstrap.dialogs import Messagebox
 from .ui_helpers import THEME_COLORS, FONT_SMALL, style_tk_text, apply_dark_titlebar, BTN_SMALL, BTN_MEDIUM, add_tooltip
 import json
 import re
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -48,7 +51,7 @@ class BuffDatabase:
             self._rebuild_indexes()
             return True
         except Exception as e:
-            print(f"Error loading buff database: {e}")
+            logger.error("Error loading buff database: %s", e)
             return False
 
     def _rebuild_indexes(self):

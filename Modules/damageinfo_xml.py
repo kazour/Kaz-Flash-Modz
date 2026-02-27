@@ -3,12 +3,15 @@ DamageInfo XML Module for KzBuilder 3.3.5
 Handles parsing and generation of TextColors.xml for per-type damage number customization.
 """
 
+import logging
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 import copy
 import re
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -268,11 +271,11 @@ def parse_textcolors_xml(filepath: str) -> Dict[str, DamageType]:
                 dtype = DamageType.from_xml_element(elem)
                 result[name] = validate_damage_type(dtype)
     except ET.ParseError as e:
-        print(f"Error parsing TextColors.xml (malformed XML): {e}")
+        logger.error("Error parsing TextColors.xml (malformed XML): %s", e)
     except FileNotFoundError:
-        print(f"TextColors.xml not found: {filepath}")
+        logger.warning("TextColors.xml not found: %s", filepath)
     except Exception as e:
-        print(f"Error reading TextColors.xml: {e}")
+        logger.error("Error reading TextColors.xml: %s", e)
 
     return result
 
@@ -329,7 +332,7 @@ def generate_textcolors_xml(
         return True
 
     except Exception as e:
-        print(f"Error generating TextColors.xml: {e}")
+        logger.error("Error generating TextColors.xml: %s", e)
         return False
 
 

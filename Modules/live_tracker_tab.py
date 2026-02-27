@@ -4,10 +4,13 @@ Ethram-Fal seed timer overlay, combat log monitoring, and overlay controls.
 Extracted from timers_tab.py in v3.1.0.
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk
 from ttkbootstrap.dialogs import Messagebox
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from .live_tracker_settings import (
     load_settings, save_settings, get_default_settings, validate_all_settings,
@@ -285,7 +288,7 @@ class LiveTrackerTab(ttk.Frame):
             try:
                 self.boss_timer.update_display()
             except Exception as e:
-                print(f"Timer loop error: {e}")
+                logger.error("Timer loop error: %s", e)
             finally:
                 self._game_loop_id = self.after(50, loop)
 

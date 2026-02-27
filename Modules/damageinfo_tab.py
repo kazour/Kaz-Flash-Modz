@@ -3,11 +3,14 @@ DamageNumber Tab UI for KzBuilder 3.3.5
 Provides GUI for customizing DamageInfo.swf settings (global AS2 + per-type XML).
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk, filedialog
 from ttkbootstrap.dialogs import Messagebox
 import json
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from .ui_helpers import (
     THEME_COLORS, FONT_SMALL, FONT_SECTION, FONT_SMALL_BOLD,
@@ -681,7 +684,7 @@ class DamageInfoTab(ttk.Frame):
                         self.damage_types[name] = validate_damage_type(dtype)
 
         except Exception as e:
-            print(f"Error loading DamageInfo settings: {e}")
+            logger.error("Error loading DamageInfo settings: %s", e)
 
     def _load_to_ui(self):
         """Load current settings to UI variables."""
@@ -750,7 +753,7 @@ class DamageInfoTab(ttk.Frame):
                 )
                 self.damage_types[type_name] = validate_damage_type(dtype)
             except Exception as e:
-                print(f"Error reading type {type_name}: {e}")
+                logger.error("Error reading type %s: %s", type_name, e)
 
     def _apply_preset(self):
         """Apply current preset values to global_settings hidden fields."""
