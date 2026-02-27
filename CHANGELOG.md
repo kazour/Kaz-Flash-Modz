@@ -4,6 +4,17 @@ All notable changes to Kaz Flash Modz will be documented in this file.
 
 ---
 
+## Post-Release Cleanup
+
+### Changed
+- Deduplicated `escape_as2_string()` and `resolve_assets_path()` into `build_utils.py` — removed identical copies from timers, stopwatch, and castbar generators
+- Replaced C-style `while i < len()` loops with idiomatic Python (`for`, `enumerate`, `sum()`, list comprehensions) in stopwatch generator and data modules
+- Flattened nested `try/try/finally/except` in damageinfo generator to match the `temp_dir = None; try/except/finally` pattern used by all other generators
+- Removed unnecessary `.resolve()` calls from timers and stopwatch build functions for consistency with castbar, grids, and damageinfo generators
+- Fixed PEP 8 blank line spacing in castbar generator
+
+---
+
 ## v3.3.4 — Stopwatch Preset System
 
 ### Added

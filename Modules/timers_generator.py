@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Tuple
 
-from .build_utils import compile_as2
+from .build_utils import compile_as2, escape_as2_string, resolve_assets_path
 from .timers_data import (
     CooldownSettings, CooldownTimer, CooldownPreset,
     TriggerType, MAX_TIMERS_PER_PRESET,
@@ -22,16 +22,9 @@ from .timers_data import (
 # TEMPLATE LOADING
 # =============================================================================
 
-def _resolve_assets_path(assets_path=None):
-    """Resolve the assets directory path."""
-    if assets_path is not None:
-        return Path(assets_path)
-    return Path(__file__).parent.parent / "assets"
-
-
 def _load_timer_template(assets_path=None):
     """Load KzTimers.as.template."""
-    base = _resolve_assets_path(assets_path)
+    base = resolve_assets_path(assets_path)
     template_path = base / "flash_timer" / "KzTimers.as.template"
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
@@ -39,7 +32,7 @@ def _load_timer_template(assets_path=None):
 
 def _load_engine_template(assets_path=None):
     """Load TimerManager.as.template."""
-    base = _resolve_assets_path(assets_path)
+    base = resolve_assets_path(assets_path)
     template_path = base / "flash_timer" / "TimerManager.as.template"
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
@@ -49,18 +42,13 @@ def _load_engine_template(assets_path=None):
 # CODE GENERATION — AS2 LITERALS
 # =============================================================================
 
-def _escape_as2_string(s: str) -> str:
-    """Escape a string for safe inclusion in AS2 string literals."""
-    return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
-
-
 def _generate_timer_literal(timer: CooldownTimer) -> str:
     """Generate AS2 object literal for a CooldownTimer config."""
     enabled = "true" if timer.enabled else "false"
     buff_id = "null" if timer.trigger_buff_id is None else str(timer.trigger_buff_id)
-    spell_name = f'"{_escape_as2_string(timer.trigger_spell_name)}"' if timer.trigger_spell_name else "null"
-    name = _escape_as2_string(timer.name)
-    timer_id = _escape_as2_string(timer.id)
+    spell_name = f'"{escape_as2_string(timer.trigger_spell_name)}"' if timer.trigger_spell_name else "null"
+    name = escape_as2_string(timer.name)
+    timer_id = escape_as2_string(timer.id)
 
     return (
         f'{{'
@@ -84,8 +72,8 @@ def _generate_timer_literal(timer: CooldownTimer) -> str:
 
 def _generate_preset_literal(preset: CooldownPreset) -> str:
     """Generate AS2 object literal for a CooldownPreset."""
-    label = _escape_as2_string(preset.label)
-    ids_arr = ", ".join(f'"{_escape_as2_string(tid)}"' for tid in preset.timer_ids)
+    label = escape_as2_string(preset.label)
+    ids_arr = ", ".join(f'"{escape_as2_string(tid)}"' for tid in preset.timer_ids)
     return f'{{label:"{label}", timerIds:[{ids_arr}]}}'
 
 
@@ -222,9 +210,9 @@ def build_flash_timer(
     Returns:
         (success: bool, message: str)
     """
-    flash_timer_path = Path(flash_timer_path).resolve()
-    output_swf = Path(output_swf).resolve()
-    compiler_path = Path(compiler_path).resolve()
+    flash_timer_path = Path(flash_timer_path)
+    output_swf = Path(output_swf)
+    compiler_path = Path(compiler_path)
 
     base_swf = flash_timer_path / "base.swf"
     common_stubs = flash_timer_path.parent / "common_stubs"

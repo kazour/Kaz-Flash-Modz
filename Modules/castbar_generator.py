@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Tuple
 
 from .castbar_settings import validate_all_settings, STYLE_COLOR_MULT, STYLE_COLOR_OFFS, BAR_STYLE_LINKAGE
-from .build_utils import compile_as2
+from .build_utils import compile_as2, resolve_assets_path
 
 
 # =============================================================================
@@ -20,16 +20,10 @@ from .build_utils import compile_as2
 
 def _load_template(assets_path=None):
     """Load AS2 template from external file."""
-    if assets_path is not None:
-        template_path = Path(assets_path) / "castbars" / "KzCastbars.as.template"
-    else:
-        template_path = Path(__file__).parent.parent / "assets" / "castbars" / "KzCastbars.as.template"
+    base = resolve_assets_path(assets_path)
+    template_path = base / "castbars" / "KzCastbars.as.template"
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
-
-
-
-
 
 
 # =============================================================================

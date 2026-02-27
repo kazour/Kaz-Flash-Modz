@@ -40,6 +40,8 @@
 - `CollapsibleSection(ttk.Frame)` — clickable header with arrow indicator, title, badge, summary; shows/hides content frame
 
 ### Modules/build_utils.py
+- `escape_as2_string()` — escape strings for safe inclusion in AS2 string literals
+- `resolve_assets_path()` — resolve assets directory with frozen-exe fallback
 - `find_compiler()` — locate MTASC executable (checks assets/compiler, app root)
 - `compile_as2()` — run MTASC with timeout; supports multi-file and `extra_flags`
 - `strip_marker_block()` — remove marker-delimited blocks from scripts

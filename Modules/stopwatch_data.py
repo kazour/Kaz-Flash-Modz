@@ -75,12 +75,7 @@ class StopwatchPreset:
     @property
     def total_duration(self) -> float:
         """Total duration of all phases in seconds."""
-        total = 0.0
-        i = 0
-        while i < len(self.phases):
-            total += self.phases[i].duration
-            i += 1
-        return total
+        return sum(p.duration for p in self.phases)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -101,11 +96,7 @@ class StopwatchPreset:
             count_direction = "ascending"
 
         phases_data = data.get("phases", [])
-        phases = []
-        i = 0
-        while i < len(phases_data) and i < MAX_PHASES_PER_PRESET:
-            phases.append(StopwatchPhase.from_dict(phases_data[i]))
-            i += 1
+        phases = [StopwatchPhase.from_dict(p) for p in phases_data[:MAX_PHASES_PER_PRESET]]
 
         return cls(
             label=data.get("label", "")[:4],
@@ -130,11 +121,7 @@ class StopwatchPresetSettings:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StopwatchPresetSettings":
         presets_data = data.get("presets", [])
-        presets = []
-        i = 0
-        while i < len(presets_data) and i < MAX_PRESETS:
-            presets.append(StopwatchPreset.from_dict(presets_data[i]))
-            i += 1
+        presets = [StopwatchPreset.from_dict(p) for p in presets_data[:MAX_PRESETS]]
         return cls(
             version=data.get("version", 1),
             presets=presets,
@@ -177,12 +164,10 @@ def validate_preset(preset: StopwatchPreset) -> List[str]:
         errors.append(f"Invalid end behavior: {preset.end_behavior}")
     if preset.count_direction not in ("ascending", "descending"):
         errors.append(f"Invalid count direction: {preset.count_direction}")
-    i = 0
-    while i < len(preset.phases):
-        phase_errors = validate_phase(preset.phases[i])
+    for phase in preset.phases:
+        phase_errors = validate_phase(phase)
         for err in phase_errors:
-            errors.append(f"Phase '{preset.phases[i].name}': {err}")
-        i += 1
+            errors.append(f"Phase '{phase.name}': {err}")
     return errors
 
 
@@ -191,14 +176,11 @@ def validate_settings(settings: StopwatchPresetSettings) -> List[str]:
     errors = []
     if len(settings.presets) > MAX_PRESETS:
         errors.append(f"Maximum {MAX_PRESETS} presets allowed")
-    i = 0
-    while i < len(settings.presets):
-        preset = settings.presets[i]
+    for i, preset in enumerate(settings.presets):
         label = preset.label or f"P{i+1}"
         preset_errors = validate_preset(preset)
         for err in preset_errors:
             errors.append(f"Preset '{label}': {err}")
-        i += 1
     return errors
 
 

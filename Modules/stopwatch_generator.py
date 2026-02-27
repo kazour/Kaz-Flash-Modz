@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Tuple
 
-from .build_utils import compile_as2
+from .build_utils import compile_as2, escape_as2_string, resolve_assets_path
 from .stopwatch_settings import validate_all_settings
 from .stopwatch_data import (
     StopwatchPresetSettings, StopwatchPreset, StopwatchPhase,
@@ -21,16 +21,9 @@ from .stopwatch_data import (
 # TEMPLATE LOADING
 # =============================================================================
 
-def _resolve_assets_path(assets_path=None):
-    """Resolve the assets directory path."""
-    if assets_path is not None:
-        return Path(assets_path)
-    return Path(__file__).parent.parent / "assets"
-
-
 def _load_template(assets_path=None):
     """Load KzStopwatch.as.template."""
-    base = _resolve_assets_path(assets_path)
+    base = resolve_assets_path(assets_path)
     template_path = base / "flash_stopwatch" / "KzStopwatch.as.template"
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
@@ -40,29 +33,19 @@ def _load_template(assets_path=None):
 # AS2 LITERAL GENERATION
 # =============================================================================
 
-def _escape_as2_string(s: str) -> str:
-    """Escape a string for safe inclusion in AS2 string literals."""
-    return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
-
-
 def _generate_phase_literal(phase: StopwatchPhase) -> str:
     """Generate AS2 object literal for a StopwatchPhase."""
-    name = _escape_as2_string(phase.name)
+    name = escape_as2_string(phase.name)
     dur_ms = int(phase.duration * 1000)
     return f'{{name:"{name}", dur:{dur_ms}, color:0x{phase.color}}}'
 
 
 def _generate_preset_literal(preset: StopwatchPreset) -> str:
     """Generate AS2 object literal for a StopwatchPreset."""
-    label = _escape_as2_string(preset.label)
+    label = escape_as2_string(preset.label)
     total_dur_ms = int(preset.total_duration * 1000)
 
-    phases_arr = []
-    i = 0
-    while i < len(preset.phases):
-        phases_arr.append(_generate_phase_literal(preset.phases[i]))
-        i += 1
-    phases_str = ", ".join(phases_arr)
+    phases_str = ", ".join(_generate_phase_literal(p) for p in preset.phases)
 
     return (
         f'{{label:"{label}", '
@@ -101,12 +84,7 @@ def generate_stopwatch_code(settings: dict, assets_path=None,
     num_presets = len(active_presets)
 
     # Generate presets array literal
-    presets_arr = []
-    i = 0
-    while i < len(active_presets):
-        presets_arr.append(_generate_preset_literal(active_presets[i]))
-        i += 1
-    presets_str = ", ".join(presets_arr)
+    presets_str = ", ".join(_generate_preset_literal(p) for p in active_presets)
 
     replacements = {
         "LAYOUT": settings["layout"],
@@ -169,9 +147,9 @@ def build_stopwatch(
     Returns:
         (success: bool, message: str)
     """
-    flash_stopwatch_path = Path(flash_stopwatch_path).resolve()
-    output_swf = Path(output_swf).resolve()
-    compiler_path = Path(compiler_path).resolve()
+    flash_stopwatch_path = Path(flash_stopwatch_path)
+    output_swf = Path(output_swf)
+    compiler_path = Path(compiler_path)
 
     base_swf = flash_stopwatch_path / "base.swf"
     common_stubs = flash_stopwatch_path.parent / "common_stubs"

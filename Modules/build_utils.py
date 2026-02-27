@@ -7,6 +7,18 @@ import subprocess
 from pathlib import Path
 
 
+def escape_as2_string(s: str) -> str:
+    """Escape a string for safe inclusion in AS2 string literals."""
+    return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+
+
+def resolve_assets_path(assets_path=None):
+    """Resolve the assets directory path, with frozen-exe fallback."""
+    if assets_path is not None:
+        return Path(assets_path)
+    return Path(__file__).parent.parent / "assets"
+
+
 def find_compiler(assets_path, app_path):
     """Find MTASC compiler, checking multiple locations. Returns Path or None."""
     for path in [

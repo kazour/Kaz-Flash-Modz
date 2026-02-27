@@ -170,48 +170,47 @@ def build_damageinfo(
     if not compiler_path.exists():
         return False, f"Compiler not found: {compiler_path}"
 
+    temp_dir = None
     try:
         # Create temp directory for modified sources
         temp_dir = tempfile.mkdtemp(prefix="damageinfo_")
         temp_scripts = Path(temp_dir) / "__Packages"
 
-        try:
-            # Step 1: Generate modified code
-            generator = DamageInfoGenerator(source_path, settings)
-            if not generator.generate(temp_scripts):
-                return False, "Failed to generate modified AS2 code"
+        # Step 1: Generate modified code
+        generator = DamageInfoGenerator(source_path, settings)
+        if not generator.generate(temp_scripts):
+            return False, "Failed to generate modified AS2 code"
 
-            # Step 2: Copy backup SWF to output location
-            output_swf.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(backup_swf, output_swf)
+        # Step 2: Copy backup SWF to output location
+        output_swf.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(backup_swf, output_swf)
 
-            # Step 3: Find std library paths relative to compiler
-            compiler_dir = compiler_path.parent
-            std_path = compiler_dir / "std"
-            std8_path = compiler_dir / "std8"
+        # Step 3: Find std library paths relative to compiler
+        compiler_dir = compiler_path.parent
+        std_path = compiler_dir / "std"
+        std8_path = compiler_dir / "std8"
 
-            # Step 4: Build MTASC command
-            # Entry point is MainDamageNumbers.as
-            entry_point = temp_scripts / "MainDamageNumbers.as"
-            if not entry_point.exists():
-                return False, f"Entry point not found: {entry_point}"
+        # Step 4: Build MTASC command
+        # Entry point is MainDamageNumbers.as
+        entry_point = temp_scripts / "MainDamageNumbers.as"
+        if not entry_point.exists():
+            return False, f"Entry point not found: {entry_point}"
 
-            # Step 5: Compile
-            ok, err = compile_as2(compiler_path, [std_path, std8_path, temp_scripts],
-                                  output_swf, entry_point, temp_dir)
-            if not ok:
-                return False, f"MTASC compilation failed:\n{err}"
+        # Step 5: Compile
+        ok, err = compile_as2(compiler_path, [std_path, std8_path, temp_scripts],
+                              output_swf, entry_point, temp_dir)
+        if not ok:
+            return False, f"MTASC compilation failed:\n{err}"
 
-            # Success
-            output_size = output_swf.stat().st_size
-            return True, f"DamageInfo.swf built successfully ({output_size:,} bytes)"
+        # Success
+        output_size = output_swf.stat().st_size
+        return True, f"DamageInfo.swf built successfully ({output_size:,} bytes)"
 
-        finally:
-            # Cleanup temp directory
+    except Exception as e:
+        return False, f"Build error: {str(e)}"
+    finally:
+        if temp_dir:
             try:
                 shutil.rmtree(temp_dir)
             except Exception:
                 pass
-
-    except Exception as e:
-        return False, f"Build error: {str(e)}"
