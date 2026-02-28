@@ -36,6 +36,13 @@ A mod builder for **Age of Conan** that creates and manages custom UI modules. C
 - 3 animation presets (Default, Performance, Beauty)
 - Per-damage-type color customization via TextColors.xml
 
+## Screenshots
+
+| KzBuilder | In-Game |
+|:---------:|:-------:|
+| ![Welcome Screen](assets/screenshots/welcome.png) | ![In-Game Preview](assets/screenshots/ingame-preview%20mode.png) |
+| ![KzTimers](assets/screenshots/kztimer.gif) | |
+
 ## Requirements
 
 - **Age of Conan** (with mod support)
