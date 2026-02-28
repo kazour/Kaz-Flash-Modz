@@ -16,7 +16,7 @@ from datetime import datetime
 # Configuration
 APP_NAME = "Kaz Flash Modz"
 MAIN_SCRIPT = "kzbuilder.py"
-VERSION = "3.3.6"
+VERSION = "3.3.7"
 
 # Directories
 ROOT_DIR = Path(__file__).parent
