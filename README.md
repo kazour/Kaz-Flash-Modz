@@ -15,7 +15,7 @@ A mod builder for **Age of Conan** that creates and manages custom UI modules. C
 - Per-bar color settings via ColorTransform
 - Font customization for spell name and timer text
 - Optional elapsed/total timer estimation ("1.2/2.5")
-- 6 visual frame styles
+- 5 visual frame styles
 - Automatically hides the game's default castbar
 
 ### KzTimers — Cooldown Tracker
