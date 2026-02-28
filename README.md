@@ -41,7 +41,7 @@ A mod builder for **Age of Conan** that creates and manages custom UI modules. C
 | KzBuilder | In-Game |
 |:---------:|:-------:|
 | ![Welcome Screen](assets/screenshots/welcome.png) | ![In-Game Preview](assets/screenshots/ingame-preview%20mode.png) |
-| ![KzTimers](assets/screenshots/kztimer.gif) | |
+| ![Edit Grids](assets/screenshots/edit-grids.png) | ![KzTimers](assets/screenshots/kztimer.gif) |
 
 ## Requirements
 
