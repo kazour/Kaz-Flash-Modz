@@ -14,14 +14,14 @@ TIMERS_DEFAULTS = {
     # Overlay position and size
     "x": 0,                     # Will be centered on first run
     "y": 50,                    # Near top of screen
-    "width": 210,
-    "height": 75,
+    "width": 269,
+    "height": 104,
 
     # Overlay state
     "locked": False,
     "transparent_bg": False,
     "opacity": 0.90,            # 0.3 - 1.0
-    "font_size": 11,            # 8 - 20
+    "font_size": 12,            # 8 - 20
 
     # Visibility (remember if user hid the overlay)
     "visible": True,

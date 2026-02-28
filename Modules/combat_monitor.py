@@ -66,6 +66,30 @@ class CombatLogMonitor:
                 self.last_position = 0
         return latest
 
+    def rescan_log(self):
+        """
+        Manually rescan for the latest combat log file.
+        Resets the file handle and position to the end of the new log.
+
+        Returns:
+            str: Path to latest log file, or None if not found
+        """
+        latest = self.find_latest_log()
+        if latest:
+            if self.file_handle:
+                try:
+                    self.file_handle.close()
+                except (IOError, OSError):
+                    pass
+                self.file_handle = None
+            self.log_path = latest
+            p = Path(latest)
+            if p.exists():
+                self.last_position = p.stat().st_size
+            else:
+                self.last_position = 0
+        return latest
+
     def set_log_path(self, path):
         """
         Directly set a specific log file path.

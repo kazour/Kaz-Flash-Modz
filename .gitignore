@@ -22,6 +22,9 @@ settings/
 temp/
 profiles/
 
+# Claude Code (local settings only)
+.claude/settings.local.json
+
 # OS
 Thumbs.db
 Desktop.ini

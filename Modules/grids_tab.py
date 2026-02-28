@@ -17,7 +17,7 @@ from Modules.ui_helpers import (
     get_setting, set_setting,
     FONT_SUBTITLE, FONT_SECTION, FONT_BODY, FONT_SMALL, FONT_SMALL_BOLD, FONT_FORM_LABEL,
     THEME_COLORS, style_tk_listbox, apply_dark_titlebar,
-    PAD_ROW, BTN_SMALL, BTN_MEDIUM, GRID_TYPE_COLORS,
+    PAD_ROW, BTN_SMALL, BTN_MEDIUM, BTN_LARGE, GRID_TYPE_COLORS,
     create_tip_bar, create_profile_info_bar,
     CollapsibleSection, add_tooltip, create_section_header, bind_card_events,
     create_scrollable_frame,
@@ -424,10 +424,10 @@ class BuffSelectorDialog(tk.Toplevel):
         # Buttons
         btn_frame = ttk.Frame(lists_frame)
         btn_frame.pack(side='left', padx=5)
-        ttk.Button(btn_frame, text="Add >>", command=self.add_selected, width=10).pack(pady=5)
-        ttk.Button(btn_frame, text="<< Remove", command=self.remove_selected, width=10).pack(pady=5)
-        ttk.Button(btn_frame, text="Add All", command=self.add_all, width=10).pack(pady=20)
-        ttk.Button(btn_frame, text="Clear", command=self.clear_all, width=10).pack(pady=5)
+        ttk.Button(btn_frame, text="Add >>", command=self.add_selected, width=12).pack(pady=5)
+        ttk.Button(btn_frame, text="<< Remove", command=self.remove_selected, width=12).pack(pady=5)
+        ttk.Button(btn_frame, text="Add All", command=self.add_all, width=12).pack(pady=20)
+        ttk.Button(btn_frame, text="Clear", command=self.clear_all, width=12).pack(pady=5)
 
         # Selected
         sel_frame = ttk.LabelFrame(lists_frame, text="Selected")
@@ -477,10 +477,10 @@ class BuffSelectorDialog(tk.Toplevel):
             buff_ids = buff.get('ids', [])
             selected_from_buff = [bid for bid in buff_ids if bid in self.selected_ids]
             if selected_from_buff:
-                id_str = format_ids_display(selected_from_buff)
+                tag = {"debuff": "(D)", "misc": "(M)"}.get(buff.get('type', 'buff'), "(B)")
                 selected_entries.append({
                     'name': buff['name'], 'ids': selected_from_buff,
-                    'buff': buff, 'display': f"{buff['name']} ({id_str})"
+                    'buff': buff, 'display': f"{buff['name']} {tag}"
                 })
         selected_entries.sort(key=lambda e: e['name'].lower())
         for entry in selected_entries:
@@ -608,11 +608,23 @@ class SlotAssignmentDialog(tk.Toplevel):
         """Update each slot listbox to show its currently assigned buffs."""
         for i, listbox in enumerate(self.slot_lists):
             listbox.delete(0, tk.END)
-            for buff_id in self.assignments.get(i, []):
-                name = self.database.get_name(buff_id)
-                btype = self.database.get_type(buff_id)
-                tag = {"debuff": "(D)", "misc": "(M)"}.get(btype, "(B)")
-                listbox.insert(tk.END, f"{name} {tag} ({buff_id})")
+            assignments = self.assignments.get(i, [])
+            if assignments:
+                # Count occurrences of each buff name to collapse stacks
+                from collections import Counter
+                counts = Counter()
+                tags = {}
+                for buff_id in assignments:
+                    name = self.database.get_name(buff_id)
+                    btype = self.database.get_type(buff_id)
+                    tag = {"debuff": "(D)", "misc": "(M)"}.get(btype, "(B)")
+                    key = f"{name} {tag}"
+                    counts[key] += 1
+                    tags[key] = tag
+                parts = []
+                for key, count in counts.items():
+                    parts.append(f"{key} x{count}" if count > 1 else key)
+                listbox.insert(tk.END, ",  ".join(parts))
 
     def edit_slot(self, slot_index):
         """Open the buff selector to edit assignments for a single slot."""
@@ -809,8 +821,8 @@ class GridEditorPanel(ttk.Frame):
         wl_row = ttk.Frame(self.dynamic_frame)
         wl_row.pack(fill='x', pady=(0, PAD_ROW))
 
-        ttk.Button(wl_row, text="Edit Whitelist...", command=self.edit_whitelist,
-                   width=BTN_MEDIUM).pack(side='left', padx=(0, 8))
+        ttk.Button(wl_row, text="Edit Whitelist...", command=self.edit_whitelist
+                   ).pack(side='left', padx=(0, 8))
         self.whitelist_label = tk.StringVar(value="Whitelist: empty \u2014 tracking all buffs")
         ttk.Label(wl_row, textvariable=self.whitelist_label,
                   foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left')
@@ -831,7 +843,7 @@ class GridEditorPanel(ttk.Frame):
         stat_row.pack(fill='x')
 
         ttk.Button(stat_row, text="Edit Slot Assignments...", command=self.edit_slots,
-                   width=BTN_MEDIUM + 4).pack(side='left', padx=(0, 8))
+                   width=BTN_LARGE).pack(side='left', padx=(0, 8))
         self.slots_label = tk.StringVar(value="0 of 0 slots assigned")
         ttk.Label(stat_row, textvariable=self.slots_label,
                   foreground=THEME_COLORS['muted'], font=FONT_SMALL).pack(side='left')

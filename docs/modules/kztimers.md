@@ -36,6 +36,7 @@ Each timer is a flat `CooldownTimer` — one tracked ability cooldown:
     triggerType: "cast_success",        // buff_add | buff_remove | cast_success
     triggerSource: "player",            // "player" or "target"
     triggerBuffId: null,                // For buff_add / buff_remove triggers
+    triggerBuffName: null,              // Display name from database (display-only, optional)
     triggerSpellName: "Rune of Aggression",  // For cast_success triggers
     duration: 40,                       // Cooldown duration in seconds
     warningThreshold: 5,                // Seconds remaining → switch to warning color

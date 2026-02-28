@@ -1,5 +1,5 @@
 """
-Kaz Flash Modz v3.3.6
+Kaz Flash Modz v3.3.7
 Multi-module SWF mod builder for Age of Conan.
 Builds KzGrids, KzCastbars, KzTimers, KzStopwatch, and DamageInfo.
 """
@@ -48,12 +48,12 @@ from Modules.ui_helpers import (
     restore_window_position, bind_window_position_save,
     FONT_TITLE, FONT_SECTION, FONT_BODY, FONT_SMALL_BOLD, FONT_SMALL,
     THEME_COLORS, TK_COLORS, apply_dark_titlebar,
-    PAD_INNER, BTN_MEDIUM, BTN_LARGE,
+    PAD_INNER, BTN_MEDIUM,
     MODULE_COLORS, add_tooltip, bind_card_events,
 )
 
 APP_NAME = "Kaz Flash Modz"
-APP_VERSION = "3.3.6"
+APP_VERSION = "3.3.7"
 SETTINGS_FILE = "kzbuilder_settings.json"
 PROFILES_DIR = "profiles"
 
@@ -315,7 +315,7 @@ class KzBuilder(ttb.Window):
         build_row = ttk.Frame(bottom_frame)
         build_row.pack(fill='x', pady=(5, 0))
         build_btn = ttk.Button(build_row, text="Build & Install All",
-                               command=self.build, width=BTN_LARGE)
+                               command=self.build)
         build_btn.pack()
         add_tooltip(build_btn, "Compile all enabled modules and install SWFs to your AoC game directory")
 
@@ -387,7 +387,7 @@ class KzBuilder(ttb.Window):
 
         ttk.Button(tracker_card, text="Open Tracker",
                    command=self._open_live_tracker, width=BTN_MEDIUM).pack(anchor='w', pady=(4, 0))
-        ttk.Label(tracker_card, text="Boss timer, combat log\nmonitoring, overlay",
+        ttk.Label(tracker_card, text="Ethram-Fal Seed timer, combat\nlog monitoring, overlay",
                   font=FONT_BODY, foreground=THEME_COLORS['body']).pack(anchor='w', pady=(4, 0))
 
         # Hover highlight only (no click-to-toggle — tracker has its own button)
@@ -570,7 +570,7 @@ class KzBuilder(ttb.Window):
         self._live_tracker_window = tk.Toplevel(self)
         self._live_tracker_window.withdraw()  # Hide during setup
         self._live_tracker_window.title("Kaz Flash Modz - Live Tracker")
-        self._live_tracker_window.geometry("450x400")
+        self._live_tracker_window.geometry("450x420")
         apply_dark_titlebar(self._live_tracker_window)
 
         self.live_tracker_tab = LiveTrackerTab(
@@ -593,7 +593,7 @@ class KzBuilder(ttb.Window):
         self.live_tracker_tab.refresh_log_path()
 
         # Window position persistence
-        restore_window_position(self._live_tracker_window, 'live_tracker_window', 450, 400, parent=self)
+        restore_window_position(self._live_tracker_window, 'live_tracker_window', 450, 420, parent=self)
         bind_window_position_save(self._live_tracker_window, 'live_tracker_window')
 
         # Handle window close

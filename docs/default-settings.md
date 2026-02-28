@@ -82,6 +82,7 @@ Per-grid, created via Add Grid Wizard.
 | trigger_type | `"buff_add"` | buff_add / buff_remove / cast_success |
 | trigger_source | `"player"` | player / target |
 | trigger_buff_id | `null` | — |
+| trigger_buff_name | `null` | Display-only (from database) |
 | trigger_spell_name | `null` | — |
 | duration | `10.0` sec | > 0 |
 | warning_threshold | `3.0` sec | >= 0 |
@@ -217,10 +218,10 @@ All values are **offsets** from the original game values. `0` = no change.
 |---------|---------|-------|
 | x | `0` (centered on first run) | 0–3840 |
 | y | `50` | 0–2160 |
-| width | `210` | 150–600 |
-| height | `75` | 60–300 |
+| width | `269` | 150–600 |
+| height | `104` | 60–300 |
 | locked | `false` | — |
 | transparent_bg | `false` | — |
 | opacity | `0.90` | 0.3–1.0 |
-| font_size | `11` | 8–20 |
+| font_size | `12` | 8–20 |
 | visible | `true` | — |

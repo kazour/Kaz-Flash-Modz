@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"echo \\\"$CLAUDE_TOOL_INPUT\\\" | python -c \\\"import sys,json; args=json.load(sys.stdin); p=args.get('file_path','').replace(chr(92),'/'); blocked=['assets/compiler','assets/flash','.swf','.fla','settings/','profiles/','__pycache__']; violations=[b for b in blocked if b in p]; sys.exit(2) if violations else sys.exit(0)\\\"\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"echo \\\"$CLAUDE_TOOL_INPUT\\\" | python -c \\\"import sys,json; args=json.load(sys.stdin); p=args.get('file_path',''); exec('import py_compile; py_compile.compile(p, doraise=True)') if p.endswith('.py') else None\\\"\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "commit-commands@claude-plugins-official": true
+  }
+}

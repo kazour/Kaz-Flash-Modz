@@ -24,7 +24,7 @@ Self-contained — no API signals, no helper classes. Standalone top-level tab (
 28 compile-time placeholders injected via `%%KEY%%` replacement:
 
 ```javascript
-// Appearance (24 placeholders)
+// Appearance (26 placeholders)
 {
     layout: "standard",         // "standard" | "compact"
     width: 220,                 // 120-400 px
@@ -51,19 +51,17 @@ Self-contained — no API signals, no helper classes. Standalone top-level tab (
         pause: "FFE066",
         stop: "FF7744",
         disabled: "555555",
+        preset_active: "FF6666",    // Active preset label color
+        preset_inactive: "CCCCCC",  // Inactive preset label color
     },
     pos_x: 400,                 // 0-3840
     pos_y: 300,                 // 0-2160
 }
 
-// Preset (4 placeholders)
+// Preset (2 placeholders)
 {
     num_presets: 3,                     // Number of presets with phases
     presets_array: [{...}, ...],        // AS2 object literal array
-    button_colors: {
-        preset_active: "FF6666",        // Active preset label color
-        preset_inactive: "CCCCCC",      // Inactive preset label color
-    },
 }
 ```
 

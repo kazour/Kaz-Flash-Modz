@@ -469,7 +469,7 @@ class DatabaseEditorTab(ttk.Frame):
         btn_frame = ttk.Frame(self, padding=5)
         btn_frame.pack(fill='x')
 
-        save_btn = ttk.Button(btn_frame, text="Save Database", command=self.save, width=BTN_MEDIUM)
+        save_btn = ttk.Button(btn_frame, text="Save Database", command=self.save)
         save_btn.pack(side='left', padx=2)
         add_tooltip(save_btn, "Save all buff entries to database file")
         ttk.Separator(btn_frame, orient='vertical').pack(side='left', fill='y', padx=10)
@@ -483,7 +483,7 @@ class DatabaseEditorTab(ttk.Frame):
         del_btn = ttk.Button(btn_frame, text="Delete", command=self.delete_buff, width=BTN_SMALL)
         del_btn.pack(side='left', padx=2)
         add_tooltip(del_btn, "Delete the selected buff entry")
-        dup_btn = ttk.Button(btn_frame, text="Duplicate", command=self.duplicate_buff, width=BTN_MEDIUM)
+        dup_btn = ttk.Button(btn_frame, text="Duplicate", command=self.duplicate_buff)
         dup_btn.pack(side='left', padx=2)
         add_tooltip(dup_btn, "Copy the selected buff as a new entry")
         ttk.Separator(btn_frame, orient='vertical').pack(side='left', fill='y', padx=10)

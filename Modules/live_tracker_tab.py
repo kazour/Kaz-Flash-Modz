@@ -93,14 +93,15 @@ class LiveTrackerTab(ttk.Frame):
         """Build seed timer monitoring controls with status display."""
         seed_frame = ttk.LabelFrame(parent, text="Seed Timer Controls")
         seed_frame.configure(padding=8)
-        seed_frame.pack(fill='x', pady=(0, 5))
+        seed_frame.pack(fill='x', pady=(0, 8))
 
+        # Buttons row
         monitor_frame = ttk.Frame(seed_frame)
         monitor_frame.pack(fill='x', pady=(0, 4))
 
         self.start_btn = ttk.Button(
             monitor_frame, text="Start Monitoring",
-            command=self._start_monitoring, width=BTN_MEDIUM
+            command=self._start_monitoring
         )
         self.start_btn.pack(side='left', padx=(0, 5))
 
@@ -111,9 +112,19 @@ class LiveTrackerTab(ttk.Frame):
         )
         self.stop_btn.pack(side='left')
 
+        self.scan_btn = ttk.Button(
+            monitor_frame, text="Scan Log",
+            command=self._rescan_log
+        )
+        self.scan_btn.pack(side='left', padx=(5, 0))
+        add_tooltip(self.scan_btn, "Re-scan for a newer combat log file")
+
+        # Separator before status
+        ttk.Separator(seed_frame, orient='horizontal').pack(fill='x', pady=(4, 6))
+
         # Status
         status_frame = ttk.Frame(seed_frame)
-        status_frame.pack(fill='x', pady=(4, 0))
+        status_frame.pack(fill='x', pady=(0, 2))
         ttk.Label(status_frame, text="Monitor:",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(side='left')
         self.status_label = ttk.Label(status_frame, text="Stopped",
@@ -128,7 +139,7 @@ class LiveTrackerTab(ttk.Frame):
         """Build overlay settings (show/lock/test, transparency, opacity, font)."""
         overlay_frame = ttk.LabelFrame(parent, text="Overlay")
         overlay_frame.configure(padding=8)
-        overlay_frame.pack(fill='x', pady=(0, 5))
+        overlay_frame.pack(fill='x', pady=(0, 8))
 
         # Row 1: Show/Lock/Test
         btn_row = ttk.Frame(overlay_frame)
@@ -145,9 +156,12 @@ class LiveTrackerTab(ttk.Frame):
         self.lock_btn.pack(side='left', padx=(0, 4))
 
         self.test_btn = ttk.Button(
-            btn_row, text="Test Cycle", command=self._toggle_test, width=BTN_MEDIUM
+            btn_row, text="Test Cycle", command=self._toggle_test
         )
         self.test_btn.pack(side='left')
+
+        # Separator before settings
+        ttk.Separator(overlay_frame, orient='horizontal').pack(fill='x', pady=(4, 6))
 
         # Row 2: Transparent checkbox
         self.transparent_var = tk.BooleanVar(value=self.timer_settings.get('transparent_bg', False))
@@ -281,6 +295,25 @@ class LiveTrackerTab(ttk.Frame):
         self.stop_btn.config(state='disabled')
 
         self._update_log_path()
+
+    def _rescan_log(self):
+        """Manually rescan for a newer combat log file."""
+        if not self.combat_monitor or not self.combat_monitor.log_folder:
+            self._update_log_path()
+            return
+
+        latest = self.combat_monitor.rescan_log()
+        if latest:
+            filename = Path(latest).name
+            self.log_status_label.config(
+                text=f"Found: {filename}",
+                foreground=THEME_COLORS['success']
+            )
+        else:
+            self.log_status_label.config(
+                text="No combat logs found. Type /logcombat on in game.",
+                foreground=THEME_COLORS['warning']
+            )
 
     def _start_game_loop(self):
         """Start the 50ms update loop."""

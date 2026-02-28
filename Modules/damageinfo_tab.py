@@ -86,7 +86,7 @@ class DamageInfoTab(ttk.Frame):
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill='x', padx=10, pady=(5, 5))
 
-        ttk.Button(btn_frame, text="Load from Game", command=self._load_from_game, width=BTN_MEDIUM).pack(side='left', padx=2)
+        ttk.Button(btn_frame, text="Load from Game", command=self._load_from_game).pack(side='left', padx=2)
         ttk.Button(btn_frame, text="Reset All", command=self._reset_all, width=BTN_MEDIUM).pack(side='left', padx=2)
 
         self.build_status = ttk.Label(
@@ -295,93 +295,94 @@ class DamageInfoTab(ttk.Frame):
 
     def _create_type_settings(self, parent):
         """Create per-type color settings with table-like layout."""
-        # Column headers (full width)
-        header = ttk.Frame(parent)
-        header.pack(fill='x', pady=(0, 2))
-
-        ttk.Label(header, text="Type", width=18, anchor='w',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Color", width=14, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Size", width=9, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Font", width=11, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Speed", width=6, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Duration", width=8, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-        ttk.Label(header, text="Dir", width=5, anchor='center',
-                  font=FONT_SECTION).pack(side='left')
-
-        # Master controls row (full width)
-        master_row = ttk.Frame(parent)
-        master_row.pack(fill='x', pady=(0, 5))
-
-        ttk.Label(master_row, text="Set All:", width=18, anchor='w',
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(side='left')
-        # Color spacer
-        ttk.Frame(master_row, width=112).pack(side='left')
-
-        size_master = ttk.Combobox(master_row, values=["", "small", "medium", "large"],
-                                   width=7, state='readonly')
-        size_master.pack(side='left', padx=2)
-        size_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('font_size', size_master.get()))
-
-        font_master = ttk.Combobox(master_row, values=["", "hyborian", "hyborian3"],
-                                   width=9, state='readonly')
-        font_master.pack(side='left', padx=2)
-        font_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('font_family', font_master.get()))
-
-        speed_master = ttk.Combobox(master_row, values=["", "50", "100", "150", "200"],
-                                    width=5, state='readonly')
-        speed_master.pack(side='left', padx=2)
-        speed_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('speed', speed_master.get()))
-
-        duration_master = ttk.Combobox(master_row, values=["", "1.0", "2.0", "3.0", "4.0", "5.0"],
-                                       width=5, state='readonly')
-        duration_master.pack(side='left', padx=2)
-        duration_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('waitonscreen', duration_master.get()))
-
-        dir_master = ttk.Combobox(master_row, values=["", "-1", "0", "1"],
-                                  width=3, state='readonly')
-        dir_master.pack(side='left', padx=2)
-        dir_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('direction', dir_master.get()))
-
-        # Separator after master controls (full width)
-        ttk.Separator(parent, orient='horizontal').pack(fill='x', pady=2)
-
-        # Below separator: table (left) + help box (right)
+        # Single shared grid ensures headers, "Set All", and data rows
+        # all share the same columns for pixel-perfect alignment.
         main_container = ttk.Frame(parent)
         main_container.pack(fill='both', expand=True)
 
-        # Left side: type rows
-        table_frame = ttk.Frame(main_container)
-        table_frame.pack(side='left', fill='both', expand=True)
+        # Left side: the table grid
+        table_grid = ttk.Frame(main_container)
+        table_grid.pack(side='left', fill='both', expand=True)
 
+        row = 0
+
+        # Row 0: column header labels
+        ttk.Label(table_grid, text="Type", width=18, anchor='w',
+                  font=FONT_SECTION).grid(row=row, column=0, sticky='w')
+        ttk.Label(table_grid, text="Color", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=1, sticky='ew')
+        ttk.Label(table_grid, text="Size", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=2, sticky='ew', padx=2)
+        ttk.Label(table_grid, text="Font", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=3, sticky='ew', padx=2)
+        ttk.Label(table_grid, text="Speed", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=4, sticky='ew', padx=2)
+        ttk.Label(table_grid, text="Duration", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=5, sticky='ew', padx=2)
+        ttk.Label(table_grid, text="Dir", anchor='center',
+                  font=FONT_SECTION).grid(row=row, column=6, sticky='ew', padx=2)
+        row += 1
+
+        # Row 1: "Set All:" master controls
+        ttk.Label(table_grid, text="Set All:", width=18, anchor='w',
+                  font=FONT_SMALL, foreground=THEME_COLORS['body']
+                  ).grid(row=row, column=0, sticky='w')
+
+        size_master = ttk.Combobox(table_grid, values=["", "small", "medium", "large"],
+                                   width=7, state='readonly')
+        size_master.grid(row=row, column=2, padx=2)
+        size_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('font_size', size_master.get()))
+
+        font_master = ttk.Combobox(table_grid, values=["", "hyborian", "hyborian3"],
+                                   width=9, state='readonly')
+        font_master.grid(row=row, column=3, padx=2)
+        font_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('font_family', font_master.get()))
+
+        speed_master = ttk.Combobox(table_grid, values=["", "50", "100", "150", "200"],
+                                    width=5, state='readonly')
+        speed_master.grid(row=row, column=4, padx=2)
+        speed_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('speed', speed_master.get()))
+
+        duration_master = ttk.Combobox(table_grid, values=["", "1.0", "2.0", "3.0", "4.0", "5.0"],
+                                       width=5, state='readonly')
+        duration_master.grid(row=row, column=5, padx=2)
+        duration_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('waitonscreen', duration_master.get()))
+
+        dir_master = ttk.Combobox(table_grid, values=["", "-1", "0", "1"],
+                                  width=3, state='readonly')
+        dir_master.grid(row=row, column=6, padx=2)
+        dir_master.bind('<<ComboboxSelected>>', lambda e: self._apply_master('direction', dir_master.get()))
+        row += 1
+
+        # Row 2: separator
+        ttk.Separator(table_grid, orient='horizontal').grid(
+            row=row, column=0, columnspan=7, sticky='ew', pady=2)
+        row += 1
+
+        # Rows 3+: category sections with data rows
         types_by_cat = get_types_by_category()
         for category in CATEGORY_ORDER:
             if category in types_by_cat and types_by_cat[category]:
-                self._create_category_section(table_frame, category, types_by_cat[category])
+                row = self._create_category_section(table_grid, row, category, types_by_cat[category])
 
         # Right side: help box
         self._create_type_help_box(main_container)
 
-    def _create_category_section(self, parent, category: str, type_names: list):
-        """Create a section for a category of damage types."""
-        # Category label
-        cat_label = ttk.Label(parent, text=category, font=FONT_SECTION,
-                              foreground=THEME_COLORS['heading'])
-        cat_label.pack(anchor='w', pady=(8, 2))
+    def _create_category_section(self, grid, row: int, category: str, type_names: list):
+        """Create a section for a category of damage types. Returns next row."""
+        # Category label spanning all columns
+        ttk.Label(grid, text=category, font=FONT_SECTION,
+                  foreground=THEME_COLORS['heading']
+                  ).grid(row=row, column=0, columnspan=7, sticky='w', pady=(8, 2))
+        row += 1
 
         for type_name in type_names:
-            self._create_type_row(parent, type_name)
+            self._create_type_row(grid, row, type_name)
+            row += 1
+        return row
 
-    def _create_type_row(self, parent, type_name: str):
-        """Create a row for editing a single damage type."""
-        row = ttk.Frame(parent)
-        row.pack(fill='x', pady=1)
-
+    def _create_type_row(self, grid, row: int, type_name: str):
+        """Create a row for editing a single damage type in the shared grid."""
         # Initialize vars dict for this type
         self.type_vars[type_name] = {}
 
@@ -390,11 +391,12 @@ class DamageInfoTab(ttk.Frame):
 
         # Type name label
         display_name = get_display_name(type_name)
-        ttk.Label(row, text=display_name, width=18, anchor='w').pack(side='left')
+        ttk.Label(grid, text=display_name, width=18, anchor='w'
+                  ).grid(row=row, column=0, sticky='w', pady=1)
 
-        # Color: Entry + Preview + Picker button
-        color_frame = ttk.Frame(row)
-        color_frame.pack(side='left')
+        # Color: Entry + Swatch in a sub-frame
+        color_frame = ttk.Frame(grid)
+        color_frame.grid(row=row, column=1, sticky='w', pady=1)
 
         color_var = tk.StringVar(value=dtype.color)
         color_entry = ttk.Entry(color_frame, textvariable=color_var, width=10)
@@ -414,39 +416,39 @@ class DamageInfoTab(ttk.Frame):
 
         # Font size dropdown
         size_var = tk.StringVar(value=dtype.font_size)
-        size_combo = ttk.Combobox(row, textvariable=size_var,
+        size_combo = ttk.Combobox(grid, textvariable=size_var,
                                   values=["small", "medium", "large"],
                                   width=7, state='readonly')
-        size_combo.pack(side='left', padx=2)
+        size_combo.grid(row=row, column=2, padx=2, pady=1)
         self.type_vars[type_name]['font_size'] = size_var
 
         # Font family dropdown
         family_var = tk.StringVar(value=dtype.font_family)
-        family_combo = ttk.Combobox(row, textvariable=family_var,
+        family_combo = ttk.Combobox(grid, textvariable=family_var,
                                     values=["hyborian", "hyborian3"],
                                     width=9, state='readonly')
-        family_combo.pack(side='left', padx=2)
+        family_combo.grid(row=row, column=3, padx=2, pady=1)
         self.type_vars[type_name]['font_family'] = family_var
 
         # Speed spinbox
         speed_var = tk.IntVar(value=dtype.speed)
-        speed_spin = ttk.Spinbox(row, textvariable=speed_var, from_=1, to=200,
+        speed_spin = ttk.Spinbox(grid, textvariable=speed_var, from_=1, to=200,
                                  increment=10, width=5)
-        speed_spin.pack(side='left', padx=2)
+        speed_spin.grid(row=row, column=4, padx=2, pady=1)
         self.type_vars[type_name]['speed'] = speed_var
 
         # Duration spinbox
         duration_var = tk.DoubleVar(value=dtype.waitonscreen)
-        duration_spin = ttk.Spinbox(row, textvariable=duration_var, from_=0.5, to=10.0,
+        duration_spin = ttk.Spinbox(grid, textvariable=duration_var, from_=0.5, to=10.0,
                                     increment=0.5, width=5)
-        duration_spin.pack(side='left', padx=2)
+        duration_spin.grid(row=row, column=5, padx=2, pady=1)
         self.type_vars[type_name]['waitonscreen'] = duration_var
 
         # Direction dropdown
         dir_var = tk.IntVar(value=dtype.direction)
-        dir_combo = ttk.Combobox(row, textvariable=dir_var,
+        dir_combo = ttk.Combobox(grid, textvariable=dir_var,
                                  values=[-1, 0, 1], width=3, state='readonly')
-        dir_combo.pack(side='left', padx=2)
+        dir_combo.grid(row=row, column=6, padx=2, pady=1)
         self.type_vars[type_name]['direction'] = dir_var
 
     def _create_type_help_box(self, parent):
@@ -455,31 +457,38 @@ class DamageInfoTab(ttk.Frame):
         help_frame.configure(padding=10)
         help_frame.pack(side='right', fill='y', padx=(15, 0), anchor='n')
 
-        # Field descriptions
-        ttk.Label(help_frame, text="Field Guide",
+        # Column Guide
+        ttk.Label(help_frame, text="Column Guide",
                   font=FONT_SECTION, foreground=THEME_COLORS['heading']).pack(anchor='w')
 
-        ttk.Label(help_frame, text="Speed",
+        ttk.Label(help_frame, text="Size",
                   font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(4, 0))
-        ttk.Label(help_frame, text="How fast the number moves\nHigher = faster movement",
+        ttk.Label(help_frame, text="Small, Medium, or Large",
+                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
+
+        ttk.Label(help_frame, text="Font",
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
+        ttk.Label(help_frame, text="Hyborian recommended for best\nperformance. Use Hyborian3 if\nlocalized glyphs are missing.",
+                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
+
+        ttk.Label(help_frame, text="Speed",
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
+        ttk.Label(help_frame, text="Movement speed of the numbers.\n100 for normal hits, 50 for crits.",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
 
         ttk.Label(help_frame, text="Duration",
                   font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
-        ttk.Label(help_frame, text="How long number stays visible\nValue in seconds (e.g. 2.0s)",
+        ttk.Label(help_frame, text="Time numbers stay visible (sec).\n2.0 for normal hits, 3.0 for crits.",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
 
         ttk.Label(help_frame, text="Dir (Direction)",
                   font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
-        ttk.Label(help_frame, text="-1 = Float down from top",
+        ttk.Label(help_frame, text="-1 = Fall downward (Fixed Columns)\n+1 = Rise upward (Floating Numbers)\n 0 = Zig-zag (Static Numbers)",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
-        ttk.Label(help_frame, text="      \u2192 Column B (if enabled)",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
-        ttk.Label(help_frame, text=" 0 = Static zig-zag pattern",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
-        ttk.Label(help_frame, text="+1 = Float up from heads",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
-        ttk.Label(help_frame, text="      \u2192 Column A",
+
+        ttk.Label(help_frame, text="Column B",
+                  font=FONT_SMALL_BOLD, foreground=THEME_COLORS['accent']).pack(anchor='w', pady=(6, 0))
+        ttk.Label(help_frame, text="When enabled, Dir -1 splits into\ntwo columns: plain numbers stay\nin A, prefixed numbers (+/\u2212 like\nHeal, Mana, Stamina) go to B.\nAdjust offset in Fixed Columns.",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(8, 0))
 
         # Separator
@@ -488,20 +497,11 @@ class DamageInfoTab(ttk.Frame):
         # Quick Setup
         ttk.Label(help_frame, text="Quick Setup",
                   font=FONT_SECTION, foreground=THEME_COLORS['heading']).pack(anchor='w')
-        ttk.Label(help_frame, text="Separate self/heals/resources\nfrom incoming damage:",
+        ttk.Label(help_frame, text="Routes incoming damage to\nColumn A and all regen/resource\ntypes to Column B.",
                   font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', pady=(4, 0))
 
-        ttk.Label(help_frame, text="\u2022  Self types \u2192 Dir -1",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(4, 0), pady=(4, 0))
-        ttk.Label(help_frame, text="\u2022  Mana/Stamina lost \u2192 Dir -1",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(4, 0))
-        ttk.Label(help_frame, text="\u2022  Enemy resources \u2192 split",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(4, 0))
-        ttk.Label(help_frame, text="\u2022  Column B enabled (X=70)",
-                  font=FONT_SMALL, foreground=THEME_COLORS['body']).pack(anchor='w', padx=(4, 0))
-
         ttk.Button(help_frame, text="Apply Recommended",
-                   command=self._apply_recommended_setup, width=18).pack(anchor='w', pady=(8, 0))
+                   command=self._apply_recommended_setup).pack(anchor='w', pady=(8, 0))
 
     # Recommended per-type values (font_size, font_family, speed, waitonscreen, direction).
     # Colors are intentionally excluded — user keeps their own color choices.

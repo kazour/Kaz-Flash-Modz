@@ -4,6 +4,25 @@ All notable changes to Kaz Flash Modz will be documented in this file.
 
 ---
 
+## v3.3.7 — UI Polish & Live Tracker
+
+### Added
+- Live Tracker: Scan Log button to re-detect newer combat log files
+- Claude Code project config (CLAUDE.md, hooks, skills)
+
+### Fixed
+- DamageInfo: Per-Type Colors column headers now align with data rows (shared grid layout)
+
+### Changed
+- Live Tracker overlay defaults: 269x104, font size 12
+- Grids: Buff selector shows type tags (B/D/M) and collapses stacked buffs in slot assignments
+- DamageInfo: Rewrote Column Guide help text for clarity
+- Stopwatch: Restricted font selection to Arial (only font embedded in base.swf)
+- Various button widths standardized across tabs
+- Documentation updated for trigger_buff_name field and overlay defaults
+
+---
+
 ## v3.3.6 — Pristine Cleanup
 
 ### Changed

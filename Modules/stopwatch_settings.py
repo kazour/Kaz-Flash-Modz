@@ -61,7 +61,7 @@ STOPWATCH_RANGES = {
 }
 
 VALID_LAYOUTS = ("standard", "compact")
-VALID_FONTS = ("Arial", "Tahoma", "Verdana", "Consolas")
+VALID_FONTS = ("Arial",)  # Only Arial is embedded in base.swf
 VALID_BUTTON_SHAPES = ("square", "rounded", "pill")
 
 
